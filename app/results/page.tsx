@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import FlightCard from '@/components/results/FlightCard';
 import FilterSidebar from '@/components/results/FilterSidebar';
+import SearchParametersBar from '@/components/results/SearchParametersBar';
 import { calculateStayDuration } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 
 // Mock data generator for demonstration
 const generateMockFlights = (params: any) => {
@@ -64,7 +63,6 @@ const generateMockFlights = (params: any) => {
 
 function ResultsContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [flights, setFlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'departure'>('price');
@@ -135,20 +133,16 @@ function ResultsContent() {
               <Link href="/" className="text-gray-600 hover:text-black text-sm">
                 ← Back
               </Link>
-              <div className="flex items-center gap-3 text-sm">
-                <button className="px-3 py-1.5 border border-gray-200 rounded hover:border-gray-400">
-                  {origin.split('(')[0].trim()} → {destination.split('(')[0].trim()}
-                </button>
-                {departureDate && (
-                  <button className="px-3 py-1.5 border border-gray-200 rounded hover:border-gray-400">
-                    {format(new Date(departureDate), 'dd MMM')}
-                    {returnDate && ` - ${format(new Date(returnDate), 'dd MMM')}`}
-                  </button>
-                )}
-                <button className="px-3 py-1.5 border border-gray-200 rounded hover:border-gray-400">
-                  {parseInt(adults) + parseInt(children)} passenger{parseInt(adults) + parseInt(children) > 1 ? 's' : ''}, {cabinClass}
-                </button>
-              </div>
+              <SearchParametersBar
+                origin={origin}
+                destination={destination}
+                departureDate={departureDate}
+                returnDate={returnDate}
+                adults={adults}
+                children={children}
+                cabinClass={cabinClass}
+                tripType={tripType}
+              />
             </div>
             
             <div className="flex items-center gap-3">
@@ -171,16 +165,16 @@ function ResultsContent() {
 
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex gap-6">
+        <div className="flex gap-8">
           {/* Filter Sidebar */}
           <FilterSidebar onFiltersChange={handleFiltersChange} />
           
           {/* Results */}
-          <div className="flex-1">
+          <div className="flex-1 max-w-3xl">
             {loading ? (
               <div className="space-y-2">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-lg h-24 animate-pulse" />
+                  <div key={i} className="bg-white border border-gray-200 rounded-lg h-24 animate-pulse max-w-3xl" />
                 ))}
               </div>
             ) : filteredFlights.length > 0 ? (
