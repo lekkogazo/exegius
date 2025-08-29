@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 interface SortOption {
   value: string;
   label: string;
-  icon?: React.ReactNode;
 }
 
 interface SortDropdownProps {
@@ -14,33 +13,6 @@ interface SortDropdownProps {
   value: string;
   onChange: (value: string) => void;
 }
-
-// Animated SVG icons
-const CheapestIcon = ({ className }: { className?: string }) => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" className="animate-pulse"/>
-    <path d="M8 5V11M6 7H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-const FastestIcon = ({ className }: { className?: string }) => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <path d="M8 2L10 7H14L8 14L6 9H2L8 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" className="animate-pulse"/>
-  </svg>
-);
-
-const EarliestIcon = ({ className }: { className?: string }) => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M8 4V8L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="animate-pulse"/>
-  </svg>
-);
-
-const iconMap: Record<string, React.ReactNode> = {
-  'price': <CheapestIcon />,
-  'duration': <FastestIcon />,
-  'departure': <EarliestIcon />,
-};
 
 export default function SortDropdown({ options, value, onChange }: SortDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -63,9 +35,8 @@ export default function SortDropdown({ options, value, onChange }: SortDropdownP
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded text-sm hover:border-gray-400 transition-all"
+        className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded text-sm hover:border-gray-400 transition-colors"
       >
-        {iconMap[value] && <span className="text-gray-600">{iconMap[value]}</span>}
         <span>{selectedOption?.label}</span>
         <svg 
           width="10" 
@@ -80,8 +51,8 @@ export default function SortDropdown({ options, value, onChange }: SortDropdownP
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[150px] overflow-hidden">
-          {options.map((option, index) => (
+        <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+          {options.map(option => (
             <button
               key={option.value}
               onClick={() => {
@@ -89,49 +60,18 @@ export default function SortDropdown({ options, value, onChange }: SortDropdownP
                 setIsOpen(false);
               }}
               className={cn(
-                'w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 transition-all duration-150',
-                'first:rounded-t-lg last:rounded-b-lg',
+                'w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg',
                 value === option.value && 'bg-gray-50 font-medium'
               )}
-              style={{
-                animation: isOpen ? `slideIn ${150 + index * 50}ms ease-out` : undefined
-              }}
             >
-              <span className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2">
-                  {iconMap[option.value] && (
-                    <span className={cn(
-                      'transition-colors',
-                      value === option.value ? 'text-black' : 'text-gray-400'
-                    )}>
-                      {iconMap[option.value]}
-                    </span>
-                  )}
-                  {option.label}
-                </span>
-                {value === option.value && (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 6L5 9L10 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
+              <span className="flex items-center justify-between">
+                {option.label}
+                {value === option.value && <span className="text-xs">✓</span>}
               </span>
             </button>
           ))}
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

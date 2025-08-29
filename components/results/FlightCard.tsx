@@ -33,18 +33,18 @@ interface FlightCardProps {
   stayDuration?: number;
 }
 
-// Map airline names to logo files
+// Map airline names to logo files - using working URLs
 const airlineLogos: Record<string, string> = {
-  'Ryanair': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d2/Ryanair_logo_2013.svg/200px-Ryanair_logo_2013.svg.png',
-  'EasyJet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/EasyJet_logo_2021.svg/200px-EasyJet_logo_2021.svg.png',
+  'Ryanair': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d2/Ryanair_logo_2013.svg/300px-Ryanair_logo_2013.svg.png',
+  'EasyJet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/EasyJet_logo_2021.svg/300px-EasyJet_logo_2021.svg.png',
   'Lufthansa': '/airline-logos/lufthansa-real.svg',
   'KLM': '/airline-logos/klm-real.svg',
   'Air France': '/airline-logos/airfrance-real.svg',
-  'British Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/42/British_Airways_Logo.svg/200px-British_Airways_Logo.svg.png',
+  'British Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/42/British_Airways_Logo.svg/300px-British_Airways_Logo.svg.png',
   'Wizz Air': '/airline-logos/wizz-air.svg',
   'Emirates': '/airline-logos/emirates.svg',
   'Turkish Airlines': '/airline-logos/turkish-airlines.svg',
-  'Qatar Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/9b/Qatar_Airways_Logo.svg/200px-Qatar_Airways_Logo.svg.png',
+  'Qatar Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/9b/Qatar_Airways_Logo.svg/300px-Qatar_Airways_Logo.svg.png',
 };
 
 // Airport full names mapping
@@ -127,20 +127,29 @@ export default function FlightCard({
     <div className="bg-white border border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-sm transition-all">
       <div className="p-4">
         <div className="flex items-center">
-          {/* Airline logo */}
-          <div className="flex items-center mr-6 min-w-[120px]">
-            {airlineLogo ? (
-              <div className="h-8 flex items-center">
+          {/* Airline logo with proper spacing and sizing */}
+          <div className="pl-3 pr-8 flex items-center">
+            <div className="w-[100px] h-8 flex items-center">
+              {airlineLogo ? (
                 <img 
                   src={airlineLogo} 
                   alt={outboundSegments[0].airline}
-                  className="h-full w-auto object-contain"
-                  style={{ maxHeight: '32px' }}
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    // Hide image and show text fallback if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'block';
+                  }}
                 />
-              </div>
-            ) : (
-              <span className="text-sm text-gray-600">{outboundSegments[0].airline}</span>
-            )}
+              ) : null}
+              <span 
+                className={airlineLogo ? "hidden text-sm text-gray-600" : "text-sm text-gray-600"}
+                style={{ display: airlineLogo ? 'none' : 'block' }}
+              >
+                {outboundSegments[0].airline}
+              </span>
+            </div>
           </div>
 
           {/* Flight details */}

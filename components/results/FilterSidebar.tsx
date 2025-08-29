@@ -42,7 +42,7 @@ export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
 
   return (
     <div className="w-64 pr-6">
-      <div className="sticky top-20">
+      <div>
         <h2 className="text-sm font-medium mb-6">Filters</h2>
         
         {/* Stops */}
