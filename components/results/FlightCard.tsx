@@ -35,8 +35,8 @@ interface FlightCardProps {
 
 // Map airline names to logo files - using working URLs
 const airlineLogos: Record<string, string> = {
-  'Ryanair': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d2/Ryanair_logo_2013.svg/300px-Ryanair_logo_2013.svg.png',
-  'EasyJet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/EasyJet_logo_2021.svg/300px-EasyJet_logo_2021.svg.png',
+  'Ryanair': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Ryanair_wordmark.svg/640px-Ryanair_wordmark.svg.png',
+  'EasyJet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/EasyJet_logo.svg/640px-EasyJet_logo.svg.png',
   'Lufthansa': '/airline-logos/lufthansa-real.svg',
   'KLM': '/airline-logos/klm-real.svg',
   'Air France': '/airline-logos/airfrance-real.svg',
@@ -128,8 +128,8 @@ export default function FlightCard({
       <div className="p-4">
         <div className="flex items-center">
           {/* Airline logo with proper spacing and sizing */}
-          <div className="pl-3 pr-8 flex items-center">
-            <div className="w-[100px] h-8 flex items-center">
+          <div className="pl-3 pr-8">
+            <div className="w-[100px] h-8 flex items-center justify-center">
               {airlineLogo ? (
                 <img 
                   src={airlineLogo} 
@@ -139,13 +139,13 @@ export default function FlightCard({
                     // Hide image and show text fallback if image fails to load
                     e.currentTarget.style.display = 'none';
                     const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'block';
+                    if (fallback) fallback.style.display = 'flex';
                   }}
                 />
               ) : null}
               <span 
                 className={airlineLogo ? "hidden text-sm text-gray-600" : "text-sm text-gray-600"}
-                style={{ display: airlineLogo ? 'none' : 'block' }}
+                style={{ display: airlineLogo ? 'none' : 'flex' }}
               >
                 {outboundSegments[0].airline}
               </span>
