@@ -82,39 +82,42 @@ export default function FlightCard({
     const arrCode = extractAirportCode(lastSegment.arrival.airport);
     
     return (
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <div className="text-lg font-medium">{format(new Date(firstSegment.departure.time), 'HH:mm')}</div>
-          <div 
-            className="text-xs text-gray-500 cursor-help hover:text-black transition-colors"
-            title={airportNames[depCode] || depCode}
-          >
-            {depCode}
+      <div className="flex items-center">
+        {/* Times and airports - fixed widths */}
+        <div className="flex items-center gap-3 flex-1">
+          <div className="w-16 text-right">
+            <div className="text-lg font-medium">{format(new Date(firstSegment.departure.time), 'HH:mm')}</div>
+            <div 
+              className="text-xs text-gray-500 cursor-help hover:text-black transition-colors"
+              title={airportNames[depCode] || depCode}
+            >
+              {depCode}
+            </div>
           </div>
-        </div>
-        
-        <div className="flex flex-col items-center flex-1 max-w-[200px]">
-          <div className="text-xs text-gray-400">{formatDuration(totalSegmentDuration)}</div>
-          <div className="relative w-full my-1">
-            <div className="h-px bg-gray-300 w-full"></div>
-            {segments.length > 1 && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1">
-                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-              </div>
-            )}
+          
+          <div className="flex flex-col items-center w-24">
+            <div className="text-xs text-gray-400">{formatDuration(totalSegmentDuration)}</div>
+            <div className="relative w-full my-1">
+              <div className="h-px bg-gray-300 w-full"></div>
+              {segments.length > 1 && (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+              )}
+            </div>
+            <div className="text-xs text-gray-400">
+              {segments.length === 1 ? 'Direct' : `${segments.length - 1} stop`}
+            </div>
           </div>
-          <div className="text-xs text-gray-400">
-            {segments.length === 1 ? 'Direct' : `${segments.length - 1} stop`}
-          </div>
-        </div>
-        
-        <div className="text-left">
-          <div className="text-lg font-medium">{format(new Date(lastSegment.arrival.time), 'HH:mm')}</div>
-          <div 
-            className="text-xs text-gray-500 cursor-help hover:text-black transition-colors"
-            title={airportNames[arrCode] || arrCode}
-          >
-            {arrCode}
+          
+          <div className="w-16 text-left">
+            <div className="text-lg font-medium">{format(new Date(lastSegment.arrival.time), 'HH:mm')}</div>
+            <div 
+              className="text-xs text-gray-500 cursor-help hover:text-black transition-colors"
+              title={airportNames[arrCode] || arrCode}
+            >
+              {arrCode}
+            </div>
           </div>
         </div>
       </div>
@@ -125,63 +128,58 @@ export default function FlightCard({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-sm transition-all">
-      <div className="p-4">
+      <div className="px-4 py-3">
         <div className="flex items-center">
-          {/* Airline logo with proper spacing and sizing */}
-          <div className="pl-4 pr-6">
-            <div className="w-[80px] h-6 flex items-center justify-center">
-              {airlineLogo ? (
-                <>
-                  <img 
-                    src={airlineLogo} 
-                    alt={outboundSegments[0].airline}
-                    className="max-w-full max-h-full object-contain"
-                    onError={(e) => {
-                      // Hide image and show text fallback if image fails to load
-                      const img = e.currentTarget as HTMLImageElement;
-                      img.style.display = 'none';
-                      const fallback = img.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.style.display = 'block';
-                    }}
-                  />
-                  <span 
-                    className="hidden text-sm text-gray-600"
-                    style={{ display: 'none' }}
-                  >
-                    {outboundSegments[0].airline}
-                  </span>
-                </>
-              ) : (
-                <span className="text-sm text-gray-600">
-                  {outboundSegments[0].airline}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Flight details */}
-          <div className="flex-1">
-            {returnSegments ? (
-              <div className="flex gap-8">
-                <div className="flex-1">{renderSegment(outboundSegments)}</div>
-                <div className="w-px bg-gray-200"></div>
-                <div className="flex-1">{renderSegment(returnSegments)}</div>
-              </div>
+          {/* Airline logo - fixed width */}
+          <div className="w-24 flex items-center justify-center mr-6">
+            {airlineLogo ? (
+              <img 
+                src={airlineLogo} 
+                alt={outboundSegments[0].airline}
+                className="max-w-full h-6 object-contain"
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  img.style.display = 'none';
+                  const parent = img.parentElement;
+                  if (parent) {
+                    const text = document.createElement('span');
+                    text.className = 'text-sm text-gray-600';
+                    text.textContent = outboundSegments[0].airline;
+                    parent.appendChild(text);
+                  }
+                }}
+              />
             ) : (
-              renderSegment(outboundSegments)
+              <span className="text-sm text-gray-600">
+                {outboundSegments[0].airline}
+              </span>
             )}
           </div>
 
-          {/* Price and select button */}
-          <div className="flex items-center gap-6 ml-8">
-            <div className="text-2xl font-light">
+          {/* Flight details - flex-1 for consistent spacing */}
+          <div className="flex-1">
+            {returnSegments ? (
+              <div className="grid grid-cols-2 gap-x-8">
+                <div>{renderSegment(outboundSegments)}</div>
+                <div className="border-l border-gray-200 pl-8">{renderSegment(returnSegments)}</div>
+              </div>
+            ) : (
+              <div className="max-w-xs">
+                {renderSegment(outboundSegments)}
+              </div>
+            )}
+          </div>
+
+          {/* Price and button - fixed width aligned right */}
+          <div className="flex items-center gap-4 ml-8">
+            <div className="text-2xl font-light text-right w-28">
               {formatPrice(price.amount, price.currency)}
             </div>
             <a
               href={bookingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-black hover:bg-gray-900 text-white px-5 py-2 text-sm font-medium rounded-lg transition-colors"
+              className="bg-black hover:bg-gray-900 text-white px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
             >
               Select →
             </a>
