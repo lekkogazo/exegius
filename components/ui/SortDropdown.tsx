@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 interface SortOption {
   value: string;
   label: string;
+  icon?: string;
 }
 
 interface SortDropdownProps {
@@ -37,12 +38,13 @@ export default function SortDropdown({ options, value, onChange }: SortDropdownP
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded text-sm hover:border-gray-400 transition-colors"
       >
+        {selectedOption?.icon && <span className="text-xs">{selectedOption.icon}</span>}
         <span>{selectedOption?.label}</span>
-        <span className={cn('transition-transform text-xs', isOpen && 'rotate-180')}>▼</span>
+        <span className={cn('transition-transform text-xs ml-1', isOpen && 'rotate-180')}>▼</span>
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+        <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[140px]">
           {options.map(option => (
             <button
               key={option.value}
@@ -55,8 +57,11 @@ export default function SortDropdown({ options, value, onChange }: SortDropdownP
                 value === option.value && 'bg-gray-50 font-medium'
               )}
             >
-              <span className="flex items-center justify-between">
-                {option.label}
+              <span className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  {option.icon && <span className="text-xs">{option.icon}</span>}
+                  {option.label}
+                </span>
                 {value === option.value && <span className="text-xs">✓</span>}
               </span>
             </button>

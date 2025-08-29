@@ -36,11 +36,16 @@ interface FlightCardProps {
 
 // Map airline names to logo files
 const airlineLogos: Record<string, string> = {
-  'Ryanair': '/airline-logos/ryanair.svg',
+  'Ryanair': '/airline-logos/ryanair-real.svg',
   'EasyJet': '/airline-logos/easyjet.svg',
-  'Lufthansa': '/airline-logos/lufthansa.svg',
+  'Lufthansa': '/airline-logos/lufthansa-real.svg',
   'KLM': '/airline-logos/klm.svg',
   'Air France': '/airline-logos/airfrance.svg',
+  'British Airways': '/airline-logos/british-airways.svg',
+  'Wizz Air': '/airline-logos/wizz-air.svg',
+  'Emirates': '/airline-logos/emirates.svg',
+  'Turkish Airlines': '/airline-logos/turkish-airlines.svg',
+  'Qatar Airways': '/airline-logos/qatar-airways.svg',
 };
 
 // Airport full names mapping
@@ -124,15 +129,18 @@ export default function FlightCard({
       <div className="p-4">
         <div className="flex items-center">
           {/* Airline logo and name */}
-          <div className="flex items-center gap-3 mr-8">
+          <div className="flex items-center gap-3 mr-8 min-w-[140px]">
             {airlineLogo ? (
-              <Image 
-                src={airlineLogo} 
-                alt={outboundSegments[0].airline}
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
+              <div className="w-8 h-8 relative flex items-center justify-center">
+                <Image 
+                  src={airlineLogo} 
+                  alt={outboundSegments[0].airline}
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                  style={{ maxWidth: '32px', maxHeight: '32px' }}
+                />
+              </div>
             ) : (
               <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-white">
                 {outboundSegments[0].airline.substring(0, 2).toUpperCase()}

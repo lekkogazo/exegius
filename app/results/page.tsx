@@ -12,7 +12,7 @@ import { calculateStayDuration } from '@/lib/utils';
 // Mock data generator for demonstration
 const generateMockFlights = (params: any) => {
   const flights = [];
-  const airlines = ['Ryanair', 'EasyJet', 'Lufthansa', 'KLM', 'Air France'];
+  const airlines = ['Ryanair', 'EasyJet', 'Lufthansa', 'KLM', 'Air France', 'British Airways', 'Wizz Air', 'Emirates', 'Turkish Airlines', 'Qatar Airways'];
   const basePrice = 39.98;
   
   for (let i = 0; i < 10; i++) {
@@ -152,9 +152,9 @@ function ResultsContent() {
               </span>
               <SortDropdown
                 options={[
-                  { value: 'price', label: 'Cheapest' },
-                  { value: 'duration', label: 'Fastest' },
-                  { value: 'departure', label: 'Earliest' }
+                  { value: 'price', label: 'Cheapest', icon: '💰' },
+                  { value: 'duration', label: 'Fastest', icon: '⚡' },
+                  { value: 'departure', label: 'Earliest', icon: '🌅' }
                 ]}
                 value={sortBy}
                 onChange={(value) => setSortBy(value as any)}
