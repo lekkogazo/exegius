@@ -35,8 +35,8 @@ interface FlightCardProps {
 
 // Map airline names to logo files - using working URLs
 const airlineLogos: Record<string, string> = {
-  'Ryanair': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Ryanair_wordmark.svg/640px-Ryanair_wordmark.svg.png',
-  'EasyJet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/EasyJet_logo.svg/640px-EasyJet_logo.svg.png',
+  'Ryanair': 'https://logos-world.net/wp-content/uploads/2020/03/Ryanair-Logo.png',
+  'EasyJet': 'https://logos-world.net/wp-content/uploads/2023/01/EasyJet-Logo.png',
   'Lufthansa': '/airline-logos/lufthansa-real.svg',
   'KLM': '/airline-logos/klm-real.svg',
   'Air France': '/airline-logos/airfrance-real.svg',
@@ -128,27 +128,34 @@ export default function FlightCard({
       <div className="p-4">
         <div className="flex items-center">
           {/* Airline logo with proper spacing and sizing */}
-          <div className="pl-3 pr-8">
-            <div className="w-[100px] h-8 flex items-center justify-center">
+          <div className="pl-4 pr-6">
+            <div className="w-[80px] h-6 flex items-center justify-center">
               {airlineLogo ? (
-                <img 
-                  src={airlineLogo} 
-                  alt={outboundSegments[0].airline}
-                  className="max-w-full max-h-full object-contain"
-                  onError={(e) => {
-                    // Hide image and show text fallback if image fails to load
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <span 
-                className={airlineLogo ? "hidden text-sm text-gray-600" : "text-sm text-gray-600"}
-                style={{ display: airlineLogo ? 'none' : 'flex' }}
-              >
-                {outboundSegments[0].airline}
-              </span>
+                <>
+                  <img 
+                    src={airlineLogo} 
+                    alt={outboundSegments[0].airline}
+                    className="max-w-full max-h-full object-contain"
+                    onError={(e) => {
+                      // Hide image and show text fallback if image fails to load
+                      const img = e.currentTarget as HTMLImageElement;
+                      img.style.display = 'none';
+                      const fallback = img.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'block';
+                    }}
+                  />
+                  <span 
+                    className="hidden text-sm text-gray-600"
+                    style={{ display: 'none' }}
+                  >
+                    {outboundSegments[0].airline}
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm text-gray-600">
+                  {outboundSegments[0].airline}
+                </span>
+              )}
             </div>
           </div>
 
