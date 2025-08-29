@@ -152,9 +152,9 @@ function ResultsContent() {
               </span>
               <SortDropdown
                 options={[
-                  { value: 'price', label: 'Cheapest', icon: '💰' },
-                  { value: 'duration', label: 'Fastest', icon: '⚡' },
-                  { value: 'departure', label: 'Earliest', icon: '🌅' }
+                  { value: 'price', label: 'Cheapest' },
+                  { value: 'duration', label: 'Fastest' },
+                  { value: 'departure', label: 'Earliest' }
                 ]}
                 value={sortBy}
                 onChange={(value) => setSortBy(value as any)}

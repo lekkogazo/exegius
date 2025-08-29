@@ -2,7 +2,6 @@
 
 import { formatDuration, formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
-import Image from 'next/image';
 
 interface FlightSegment {
   departure: {
@@ -36,16 +35,16 @@ interface FlightCardProps {
 
 // Map airline names to logo files
 const airlineLogos: Record<string, string> = {
-  'Ryanair': '/airline-logos/ryanair-real.svg',
-  'EasyJet': '/airline-logos/easyjet.svg',
+  'Ryanair': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d2/Ryanair_logo_2013.svg/200px-Ryanair_logo_2013.svg.png',
+  'EasyJet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/EasyJet_logo_2021.svg/200px-EasyJet_logo_2021.svg.png',
   'Lufthansa': '/airline-logos/lufthansa-real.svg',
-  'KLM': '/airline-logos/klm.svg',
-  'Air France': '/airline-logos/airfrance.svg',
-  'British Airways': '/airline-logos/british-airways.svg',
+  'KLM': '/airline-logos/klm-real.svg',
+  'Air France': '/airline-logos/airfrance-real.svg',
+  'British Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/42/British_Airways_Logo.svg/200px-British_Airways_Logo.svg.png',
   'Wizz Air': '/airline-logos/wizz-air.svg',
   'Emirates': '/airline-logos/emirates.svg',
   'Turkish Airlines': '/airline-logos/turkish-airlines.svg',
-  'Qatar Airways': '/airline-logos/qatar-airways.svg',
+  'Qatar Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/9b/Qatar_Airways_Logo.svg/200px-Qatar_Airways_Logo.svg.png',
 };
 
 // Airport full names mapping
@@ -128,25 +127,20 @@ export default function FlightCard({
     <div className="bg-white border border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-sm transition-all">
       <div className="p-4">
         <div className="flex items-center">
-          {/* Airline logo and name */}
-          <div className="flex items-center gap-3 mr-8 min-w-[140px]">
+          {/* Airline logo */}
+          <div className="flex items-center mr-6 min-w-[120px]">
             {airlineLogo ? (
-              <div className="w-8 h-8 relative flex items-center justify-center">
-                <Image 
+              <div className="h-8 flex items-center">
+                <img 
                   src={airlineLogo} 
                   alt={outboundSegments[0].airline}
-                  width={32}
-                  height={32}
-                  className="object-contain"
-                  style={{ maxWidth: '32px', maxHeight: '32px' }}
+                  className="h-full w-auto object-contain"
+                  style={{ maxHeight: '32px' }}
                 />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-white">
-                {outboundSegments[0].airline.substring(0, 2).toUpperCase()}
-              </div>
+              <span className="text-sm text-gray-600">{outboundSegments[0].airline}</span>
             )}
-            <span className="text-sm text-gray-600">{outboundSegments[0].airline}</span>
           </div>
 
           {/* Flight details */}
