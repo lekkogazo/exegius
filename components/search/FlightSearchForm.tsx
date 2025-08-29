@@ -143,9 +143,9 @@ export default function FlightSearchForm() {
             const isDeparture = departureDate && day.toDateString() === departureDate.toDateString();
             const isReturn = returnDate && day.toDateString() === returnDate.toDateString();
             const isInRange = tripType === 'return' && selectingReturn && departureDate && hoveredDate && 
-                           day > departureDate && day <= hoveredDate;
+                           day >= departureDate && day <= hoveredDate;
             const isStaticRange = tripType === 'return' && !selectingReturn && departureDate && returnDate &&
-                                day > departureDate && day < returnDate;
+                                day >= departureDate && day <= returnDate;
             
             return (
               <button

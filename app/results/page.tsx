@@ -6,6 +6,7 @@ import Link from 'next/link';
 import FlightCard from '@/components/results/FlightCard';
 import FilterSidebar from '@/components/results/FilterSidebar';
 import SearchParametersBar from '@/components/results/SearchParametersBar';
+import SortDropdown from '@/components/ui/SortDropdown';
 import { calculateStayDuration } from '@/lib/utils';
 
 // Mock data generator for demonstration
@@ -149,15 +150,15 @@ function ResultsContent() {
               <span className="text-sm text-gray-500">
                 {loading ? 'Searching...' : `${filteredFlights.length} results`}
               </span>
-              <select
+              <SortDropdown
+                options={[
+                  { value: 'price', label: 'Cheapest' },
+                  { value: 'duration', label: 'Fastest' },
+                  { value: 'departure', label: 'Earliest' }
+                ]}
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
-              >
-                <option value="price">Cheapest</option>
-                <option value="duration">Fastest</option>
-                <option value="departure">Earliest</option>
-              </select>
+                onChange={(value) => setSortBy(value as any)}
+              />
             </div>
           </div>
         </div>
@@ -169,32 +170,37 @@ function ResultsContent() {
           {/* Filter Sidebar */}
           <FilterSidebar onFiltersChange={handleFiltersChange} />
           
-          {/* Results */}
+          {/* Results - centered with empty space on right */}
           <div className="flex-1">
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-xl h-32 animate-pulse" />
-                ))}
-              </div>
-            ) : filteredFlights.length > 0 ? (
-              <div className="space-y-3">
-                {filteredFlights.map((flight) => (
-                  <FlightCard key={flight.id} {...flight} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-sm">No flights found matching your filters.</p>
-                <button
-                  onClick={() => setFilters({ maxPrice: 1500, stops: 'any', airlines: [], departureTime: 'any', duration: 24 })}
-                  className="text-black hover:underline mt-4 inline-block text-sm"
-                >
-                  Clear filters
-                </button>
-              </div>
-            )}
+            <div className="max-w-4xl">
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="bg-white border border-gray-200 rounded-lg h-20 animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredFlights.length > 0 ? (
+                <div className="space-y-2">
+                  {filteredFlights.map((flight) => (
+                    <FlightCard key={flight.id} {...flight} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-sm">No flights found matching your filters.</p>
+                  <button
+                    onClick={() => setFilters({ maxPrice: 1500, stops: 'any', airlines: [], departureTime: 'any', duration: 24 })}
+                    className="text-black hover:underline mt-4 inline-block text-sm"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+          
+          {/* Empty space on right to balance layout */}
+          <div className="w-64"></div>
         </div>
       </div>
     </main>

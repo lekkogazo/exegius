@@ -128,7 +128,9 @@ export default function SearchParametersBar({
             const isDeparture = selectedDeparture && day.toDateString() === selectedDeparture.toDateString();
             const isReturn = selectedReturn && day.toDateString() === selectedReturn.toDateString();
             const isInRange = selectingReturn && selectedDeparture && hoveredDate && 
-                           day > selectedDeparture && day <= hoveredDate;
+                           day >= selectedDeparture && day <= hoveredDate;
+            const isStaticRange = !selectingReturn && selectedDeparture && selectedReturn &&
+                                day >= selectedDeparture && day <= selectedReturn;
             
             return (
               <button
@@ -154,10 +156,9 @@ export default function SearchParametersBar({
                 className={cn(
                   'h-8 text-sm rounded hover:bg-gray-100',
                   isDisabled && 'text-gray-300 cursor-not-allowed',
-                  isTodayDate && 'font-bold',
-                  isDeparture && 'bg-black text-white',
-                  isReturn && 'bg-black text-white',
-                  isInRange && 'bg-gray-200'
+                  isTodayDate && !isDeparture && !isReturn && 'font-bold',
+                  (isDeparture || isReturn) && 'bg-black text-white',
+                  (isInRange || isStaticRange) && !isDeparture && !isReturn && 'bg-gray-200'
                 )}
               >
                 {format(day, 'd')}
@@ -195,8 +196,8 @@ export default function SearchParametersBar({
         </button>
         
         {editingField === 'route' && (
-          <div className="absolute top-full mt-2 bg-white border border-gray-200 rounded-xl p-4 shadow-lg z-20 w-96">
-            <div className="space-y-3">
+          <div className="absolute top-full mt-2 bg-white border border-gray-200 rounded-xl p-3 shadow-lg z-20 w-80">
+            <div className="space-y-2">
               <div>
                 <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">From</label>
                 <input
