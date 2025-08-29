@@ -31,6 +31,9 @@ export default function FlightSearchForm() {
   const [showPassengerMenu, setShowPassengerMenu] = useState(false);
   const [showDepartCalendar, setShowDepartCalendar] = useState(false);
   const [showReturnCalendar, setShowReturnCalendar] = useState(false);
+  const [showCombinedCalendar, setShowCombinedCalendar] = useState(false);
+  const [selectingReturn, setSelectingReturn] = useState(false);
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
   const [showOriginSuggestions, setShowOriginSuggestions] = useState(false);
   const [showDestSuggestions, setShowDestSuggestions] = useState(false);
   const [adults, setAdults] = useState(1);
@@ -69,7 +72,7 @@ export default function FlightSearchForm() {
     setShowPassengerMenu(false);
   };
 
-  const renderCalendar = (setDate: (date: Date) => void, closeCalendar: () => void) => {
+  const renderCombinedCalendar = () => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
     const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -78,6 +81,29 @@ export default function FlightSearchForm() {
     const firstDayOfMonth = days[0];
     const dayOfWeek = firstDayOfMonth.getDay();
     const paddingDays = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    const handleDateClick = (day: Date) => {
+      if (isBefore(day, new Date())) return;
+      
+      if (!selectingReturn) {
+        setDepartureDate(day);
+        setReturnDate(null);
+        setSelectingReturn(true);
+        if (tripType === 'oneway') {
+          setShowCombinedCalendar(false);
+        }
+      } else {
+        if (departureDate && day >= departureDate) {
+          setReturnDate(day);
+          setSelectingReturn(false);
+          setShowCombinedCalendar(false);
+        } else {
+          // If clicked date is before departure, reset
+          setDepartureDate(day);
+          setReturnDate(null);
+        }
+      }
+    };
 
     return (
       <div className="absolute top-full mt-2 bg-white border border-gray-200 rounded-xl p-4 shadow-lg z-20 w-80">
@@ -114,27 +140,36 @@ export default function FlightSearchForm() {
           {days.map(day => {
             const isDisabled = isBefore(day, new Date());
             const isTodayDate = isToday(day);
+            const isDeparture = departureDate && day.toDateString() === departureDate.toDateString();
+            const isReturn = returnDate && day.toDateString() === returnDate.toDateString();
+            const isInRange = tripType === 'return' && selectingReturn && departureDate && hoveredDate && 
+                           day > departureDate && day <= hoveredDate;
+            const isStaticRange = tripType === 'return' && !selectingReturn && departureDate && returnDate &&
+                                day > departureDate && day < returnDate;
             
             return (
               <button
                 key={day.toISOString()}
-                onClick={() => {
-                  if (!isDisabled) {
-                    setDate(day);
-                    closeCalendar();
-                  }
-                }}
+                onClick={() => handleDateClick(day)}
+                onMouseEnter={() => selectingReturn && setHoveredDate(day)}
+                onMouseLeave={() => setHoveredDate(null)}
                 disabled={isDisabled}
                 className={cn(
-                  'h-8 text-sm rounded hover:bg-gray-100',
+                  'h-8 text-sm rounded hover:bg-gray-100 transition-colors',
                   isDisabled && 'text-gray-300 cursor-not-allowed',
-                  isTodayDate && 'font-bold'
+                  isTodayDate && !isDeparture && !isReturn && 'font-bold',
+                  (isDeparture || isReturn) && 'bg-black text-white hover:bg-gray-800',
+                  (isInRange || isStaticRange) && 'bg-gray-200'
                 )}
               >
                 {format(day, 'd')}
               </button>
             );
           })}
+        </div>
+        
+        <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+          {selectingReturn && tripType === 'return' ? 'Select return date' : 'Select departure date'}
         </div>
       </div>
     );
@@ -251,16 +286,16 @@ export default function FlightSearchForm() {
               <input
                 type="text"
                 value={departureDate ? format(departureDate, 'dd MMM yyyy') : ''}
-                onClick={() => setShowDepartCalendar(!showDepartCalendar)}
+                onClick={() => {
+                  setShowCombinedCalendar(!showCombinedCalendar);
+                  setSelectingReturn(false);
+                }}
                 placeholder="Select date"
                 readOnly
                 className="w-full px-4 pt-7 pb-3 bg-white border border-gray-200 rounded-xl text-sm focus:border-gray-400 focus:outline-none cursor-pointer"
               />
               
-              {showDepartCalendar && renderCalendar(
-                (date) => setDepartureDate(date),
-                () => setShowDepartCalendar(false)
-              )}
+              {showCombinedCalendar && renderCombinedCalendar()}
             </div>
             
             <div className="relative">
@@ -268,7 +303,12 @@ export default function FlightSearchForm() {
               <input
                 type="text"
                 value={returnDate ? format(returnDate, 'dd MMM yyyy') : ''}
-                onClick={() => tripType === 'return' && setShowReturnCalendar(!showReturnCalendar)}
+                onClick={() => {
+                  if (tripType === 'return') {
+                    setShowCombinedCalendar(!showCombinedCalendar);
+                    setSelectingReturn(!!departureDate);
+                  }
+                }}
                 placeholder={tripType === 'oneway' ? 'One way' : 'Select date'}
                 readOnly
                 disabled={tripType === 'oneway'}
@@ -277,11 +317,6 @@ export default function FlightSearchForm() {
                   tripType === 'oneway' && "bg-gray-50 text-gray-400 cursor-not-allowed"
                 )}
               />
-              
-              {showReturnCalendar && renderCalendar(
-                (date) => setReturnDate(date),
-                () => setShowReturnCalendar(false)
-              )}
             </div>
           </div>
 

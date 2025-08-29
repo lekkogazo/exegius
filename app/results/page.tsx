@@ -170,15 +170,15 @@ function ResultsContent() {
           <FilterSidebar onFiltersChange={handleFiltersChange} />
           
           {/* Results */}
-          <div className="flex-1 max-w-3xl">
+          <div className="flex-1">
             {loading ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-lg h-24 animate-pulse max-w-3xl" />
+                  <div key={i} className="bg-white border border-gray-200 rounded-xl h-32 animate-pulse" />
                 ))}
               </div>
             ) : filteredFlights.length > 0 ? (
-              <div>
+              <div className="space-y-3">
                 {filteredFlights.map((flight) => (
                   <FlightCard key={flight.id} {...flight} />
                 ))}

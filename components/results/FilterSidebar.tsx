@@ -41,9 +41,9 @@ export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
   ];
 
   return (
-    <div className="w-64 pr-6 h-[calc(100vh-80px)] sticky top-20">
-      <div className="h-full overflow-y-auto pb-6">
-        <h2 className="text-sm font-medium mb-6 sticky top-0 bg-white py-2">Filters</h2>
+    <div className="w-64 pr-6">
+      <div className="sticky top-20">
+        <h2 className="text-sm font-medium mb-6">Filters</h2>
         
         {/* Stops */}
         <div className="mb-6">

@@ -53,6 +53,7 @@ export default function SearchParametersBar({
     returnDate ? new Date(returnDate) : null
   );
   const [selectingReturn, setSelectingReturn] = useState(false);
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
   const [passengersAdults, setPassengersAdults] = useState(parseInt(adults));
   const [passengersChildren, setPassengersChildren] = useState(parseInt(children));
   const [passengersCabin, setPassengersCabin] = useState(cabinClass);
@@ -126,6 +127,8 @@ export default function SearchParametersBar({
             const isTodayDate = isToday(day);
             const isDeparture = selectedDeparture && day.toDateString() === selectedDeparture.toDateString();
             const isReturn = selectedReturn && day.toDateString() === selectedReturn.toDateString();
+            const isInRange = selectingReturn && selectedDeparture && hoveredDate && 
+                           day > selectedDeparture && day <= hoveredDate;
             
             return (
               <button
@@ -146,12 +149,15 @@ export default function SearchParametersBar({
                   }
                 }}
                 disabled={isDisabled}
+                onMouseEnter={() => selectingReturn && setHoveredDate(day)}
+                onMouseLeave={() => setHoveredDate(null)}
                 className={cn(
                   'h-8 text-sm rounded hover:bg-gray-100',
                   isDisabled && 'text-gray-300 cursor-not-allowed',
                   isTodayDate && 'font-bold',
                   isDeparture && 'bg-black text-white',
-                  isReturn && 'bg-black text-white'
+                  isReturn && 'bg-black text-white',
+                  isInRange && 'bg-gray-200'
                 )}
               >
                 {format(day, 'd')}
@@ -181,81 +187,99 @@ export default function SearchParametersBar({
     <div className="flex items-center gap-2 text-sm">
       {/* Route */}
       <div className="relative">
-        {editingField === 'route' ? (
-          <div className="flex items-center gap-1 bg-white border border-gray-400 rounded px-2 py-1">
-            <div className="relative">
-              <input
-                type="text"
-                value={originValue}
-                onChange={(e) => setOriginValue(e.target.value)}
-                onFocus={() => setShowOriginDropdown(true)}
-                onBlur={() => setTimeout(() => setShowOriginDropdown(false), 200)}
-                className="w-24 outline-none text-sm"
-                placeholder="From"
-              />
-              {showOriginDropdown && filteredOriginAirports.length > 0 && (
-                <div className="absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-48 overflow-auto">
-                  {filteredOriginAirports.map(airport => (
-                    <button
-                      key={airport.code}
-                      onClick={() => {
-                        setOriginValue(`${airport.city} (${airport.code})`);
-                        setShowOriginDropdown(false);
-                      }}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
-                    >
-                      <div className="font-medium">{airport.city}</div>
-                      <div className="text-xs text-gray-500">{airport.code}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
+        <button
+          onClick={() => setEditingField(editingField === 'route' ? null : 'route')}
+          className="px-3 py-1.5 border border-gray-200 rounded hover:border-gray-400"
+        >
+          {origin.split('(')[0].trim()} → {destination.split('(')[0].trim()}
+        </button>
+        
+        {editingField === 'route' && (
+          <div className="absolute top-full mt-2 bg-white border border-gray-200 rounded-xl p-4 shadow-lg z-20 w-96">
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">From</label>
+                <input
+                  type="text"
+                  value={originValue}
+                  onChange={(e) => setOriginValue(e.target.value)}
+                  onFocus={() => setShowOriginDropdown(true)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                  placeholder="City or airport"
+                />
+                {showOriginDropdown && filteredOriginAirports.length > 0 && (
+                  <div className="mt-1 bg-white border border-gray-200 rounded-lg shadow-sm max-h-48 overflow-auto">
+                    {filteredOriginAirports.map(airport => (
+                      <button
+                        key={airport.code}
+                        onClick={() => {
+                          setOriginValue(`${airport.city} (${airport.code})`);
+                          setShowOriginDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
+                      >
+                        <div className="font-medium">{airport.city}</div>
+                        <div className="text-xs text-gray-500">{airport.code} - {airport.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-center">
+                <button onClick={handleSwap} className="p-2 hover:bg-gray-100 rounded-lg">
+                  ⇄
+                </button>
+              </div>
+              
+              <div>
+                <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">To</label>
+                <input
+                  type="text"
+                  value={destValue}
+                  onChange={(e) => setDestValue(e.target.value)}
+                  onFocus={() => setShowDestDropdown(true)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                  placeholder="City or airport"
+                />
+                {showDestDropdown && filteredDestAirports.length > 0 && (
+                  <div className="mt-1 bg-white border border-gray-200 rounded-lg shadow-sm max-h-48 overflow-auto">
+                    {filteredDestAirports.map(airport => (
+                      <button
+                        key={airport.code}
+                        onClick={() => {
+                          setDestValue(`${airport.city} (${airport.code})`);
+                          setShowDestDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
+                      >
+                        <div className="font-medium">{airport.city}</div>
+                        <div className="text-xs text-gray-500">{airport.code} - {airport.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="pt-3 border-t border-gray-100 space-y-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded border-gray-300" />
+                  <span>Direct flights only</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded border-gray-300" />
+                  <span>Add nearby airports</span>
+                </label>
+              </div>
+              
+              <button
+                onClick={handleSearch}
+                className="w-full py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-900 transition-colors mt-4"
+              >
+                Search
+              </button>
             </div>
-            
-            <button onClick={handleSwap} className="px-1 hover:bg-gray-100 rounded">
-              ⇄
-            </button>
-            
-            <div className="relative">
-              <input
-                type="text"
-                value={destValue}
-                onChange={(e) => setDestValue(e.target.value)}
-                onFocus={() => setShowDestDropdown(true)}
-                onBlur={() => setTimeout(() => setShowDestDropdown(false), 200)}
-                className="w-24 outline-none text-sm"
-                placeholder="To"
-              />
-              {showDestDropdown && filteredDestAirports.length > 0 && (
-                <div className="absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-48 overflow-auto">
-                  {filteredDestAirports.map(airport => (
-                    <button
-                      key={airport.code}
-                      onClick={() => {
-                        setDestValue(`${airport.city} (${airport.code})`);
-                        setShowDestDropdown(false);
-                      }}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
-                    >
-                      <div className="font-medium">{airport.city}</div>
-                      <div className="text-xs text-gray-500">{airport.code}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <button onClick={handleSearch} className="px-2 py-0.5 bg-black text-white rounded text-xs">
-              GO
-            </button>
           </div>
-        ) : (
-          <button
-            onClick={() => setEditingField('route')}
-            className="px-3 py-1.5 border border-gray-200 rounded hover:border-gray-400"
-          >
-            {origin.split('(')[0].trim()} → {destination.split('(')[0].trim()}
-          </button>
         )}
       </div>
 

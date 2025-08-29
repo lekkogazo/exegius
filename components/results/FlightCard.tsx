@@ -33,14 +33,14 @@ interface FlightCardProps {
   stayDuration?: number;
 }
 
-// Airline logos as simple colored circles for now
+// Airline colors for the logos
 const airlineColors: Record<string, string> = {
-  'Ryanair': 'bg-blue-600',
-  'EasyJet': 'bg-orange-500',
-  'Lufthansa': 'bg-gray-800',
-  'KLM': 'bg-blue-500',
-  'Air France': 'bg-red-600',
-  'British Airways': 'bg-blue-800',
+  'Ryanair': '#073590',
+  'EasyJet': '#FF6600',
+  'Lufthansa': '#001751',
+  'KLM': '#00A1E4',
+  'Air France': '#004B87',
+  'British Airways': '#075AAA',
 };
 
 // Airport full names mapping
@@ -64,14 +64,14 @@ export default function FlightCard({
   returnSegments,
   price,
   bookingUrl,
+  stayDuration,
 }: FlightCardProps) {
   const extractAirportCode = (airport: string) => {
-    // Extract code from format like "New York (JFK)" or just "JFK"
     const match = airport.match(/\(([^)]+)\)/);
     return match ? match[1] : airport;
   };
 
-  const renderSegment = (segments: FlightSegment[]) => {
+  const renderSegment = (segments: FlightSegment[], isReturn = false) => {
     const firstSegment = segments[0];
     const lastSegment = segments[segments.length - 1];
     const totalSegmentDuration = segments.reduce((acc, seg) => acc + seg.duration, 0);
@@ -79,50 +79,44 @@ export default function FlightCard({
     const arrCode = extractAirportCode(lastSegment.arrival.airport);
     
     return (
-      <div className="flex items-center gap-4">
-        {/* Airline logo */}
-        <div className="flex items-center gap-2 w-24">
-          <div className={`w-4 h-4 rounded-full ${airlineColors[firstSegment.airline] || 'bg-gray-400'}`} />
-          <span className="text-xs text-gray-500 truncate">{firstSegment.airline}</span>
-        </div>
-        
-        {/* Departure */}
-        <div className="text-right w-20">
-          <div className="font-medium text-sm">{format(new Date(firstSegment.departure.time), 'HH:mm')}</div>
-          <div 
-            className="text-xs text-gray-500 cursor-help hover:text-black transition-colors"
-            title={airportNames[depCode] || depCode}
-          >
-            {depCode}
-          </div>
-        </div>
-        
-        {/* Duration and stops */}
-        <div className="flex-1 max-w-32">
-          <div className="text-center">
-            <div className="text-xs text-gray-400">{formatDuration(totalSegmentDuration)}</div>
-            <div className="relative">
-              <div className="h-px bg-gray-300 w-full my-1"></div>
-              {segments.length > 1 && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                </div>
-              )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          {/* Times and airports */}
+          <div className="flex items-center gap-8">
+            <div>
+              <div className="text-lg font-medium">{format(new Date(firstSegment.departure.time), 'HH:mm')}</div>
+              <div 
+                className="text-sm text-gray-500 cursor-help hover:text-black transition-colors"
+                title={airportNames[depCode] || depCode}
+              >
+                {depCode}
+              </div>
             </div>
-            <div className="text-xs text-gray-400">
-              {segments.length === 1 ? 'direct' : `${segments.length - 1} stop`}
+            
+            <div className="flex flex-col items-center min-w-[140px]">
+              <div className="text-xs text-gray-400 mb-1">{formatDuration(totalSegmentDuration)}</div>
+              <div className="relative w-full">
+                <div className="h-px bg-gray-300 w-full"></div>
+                {segments.length > 1 && (
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1">
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  </div>
+                )}
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                {segments.length === 1 ? 'Direct' : `${segments.length - 1} stop`}
+              </div>
             </div>
-          </div>
-        </div>
-        
-        {/* Arrival */}
-        <div className="text-left w-20">
-          <div className="font-medium text-sm">{format(new Date(lastSegment.arrival.time), 'HH:mm')}</div>
-          <div 
-            className="text-xs text-gray-500 cursor-help hover:text-black transition-colors"
-            title={airportNames[arrCode] || arrCode}
-          >
-            {arrCode}
+            
+            <div>
+              <div className="text-lg font-medium">{format(new Date(lastSegment.arrival.time), 'HH:mm')}</div>
+              <div 
+                className="text-sm text-gray-500 cursor-help hover:text-black transition-colors"
+                title={airportNames[arrCode] || arrCode}
+              >
+                {arrCode}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -130,32 +124,55 @@ export default function FlightCard({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg hover:border-gray-400 transition-all mb-2 max-w-3xl">
-      <div className="p-3">
-        {returnSegments ? (
-          <div className="space-y-3">
-            <div>{renderSegment(outboundSegments)}</div>
-            <div className="pt-3 border-t border-gray-100">
-              {renderSegment(returnSegments)}
+    <div className="bg-white border border-gray-200 rounded-xl hover:border-gray-400 hover:shadow-sm transition-all">
+      <div className="p-5">
+        <div className="flex">
+          {/* Left side - Airline and flight details */}
+          <div className="flex-1">
+            {/* Airline */}
+            <div className="flex items-center gap-3 mb-4">
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                style={{ backgroundColor: airlineColors[outboundSegments[0].airline] || '#6B7280' }}
+              >
+                {outboundSegments[0].airline.substring(0, 2).toUpperCase()}
+              </div>
+              <span className="text-sm text-gray-600">{outboundSegments[0].airline}</span>
             </div>
-          </div>
-        ) : (
-          renderSegment(outboundSegments)
-        )}
-        
-        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-end gap-4">
-          <div className="text-xl font-light">
-            {formatPrice(price.amount, price.currency)}
+            
+            {/* Flights */}
+            <div className="space-y-4">
+              {renderSegment(outboundSegments)}
+              {returnSegments && (
+                <>
+                  <div className="border-t border-gray-100 pt-4">
+                    {renderSegment(returnSegments, true)}
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {stayDuration && (
+              <div className="text-xs text-gray-400 mt-3">
+                Length of stay: {stayDuration} days
+              </div>
+            )}
           </div>
           
-          <a
-            href={bookingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-black hover:bg-gray-900 text-white px-4 py-1.5 text-xs uppercase tracking-wider transition-colors rounded"
-          >
-            Select
-          </a>
+          {/* Right side - Price and select button */}
+          <div className="flex flex-col items-end justify-center pl-8 ml-8 border-l border-gray-100">
+            <div className="text-3xl font-light mb-3">
+              {formatPrice(price.amount, price.currency)}
+            </div>
+            <a
+              href={bookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-black hover:bg-gray-900 text-white px-6 py-2 text-sm font-medium rounded-lg transition-colors"
+            >
+              Select →
+            </a>
+          </div>
         </div>
       </div>
     </div>
