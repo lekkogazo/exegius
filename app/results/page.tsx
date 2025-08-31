@@ -135,7 +135,7 @@ function ResultsContent() {
             </Link>
             
             <div className="flex justify-center flex-1">
-              <div style={{ maxWidth: '652px', width: '100%' }}>
+              <div style={{ maxWidth: '652px', width: '100%', marginLeft: '74px' }}>
                 <CompactSearchBar
                   origin={origin}
                   destination={destination}
