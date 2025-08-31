@@ -2,8 +2,9 @@
 
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowRight, ChevronDown, ChevronUp, Plane, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Plane, Clock, Luggage, Info, Coffee, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { getAirlineLogoPath } from '@/lib/airline-codes';
 
 interface FlightSegment {
   departure: {
@@ -35,19 +36,6 @@ interface FlightCardProps {
   stayDuration?: number;
 }
 
-const airlineLogos: Record<string, string> = {
-  'Ryanair': 'https://logos-world.net/wp-content/uploads/2020/03/Ryanair-Logo.png',
-  'EasyJet': 'https://logos-world.net/wp-content/uploads/2023/01/EasyJet-Logo.png',
-  'easyJet': 'https://logos-world.net/wp-content/uploads/2023/01/EasyJet-Logo.png',
-  'Lufthansa': 'https://upload.wikimedia.org/wikipedia/commons/b/b8/Lufthansa_Logo_2018.svg',
-  'KLM': '/airline-logos/klm-real.svg',
-  'Air France': '/airline-logos/airfrance-real.svg',
-  'British Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/42/British_Airways_Logo.svg/300px-British_Airways_Logo.svg.png',
-  'Wizz Air': '/airline-logos/wizz-air.svg',
-  'Emirates': '/airline-logos/emirates.svg',
-  'Turkish Airlines': '/airline-logos/turkish-airlines.svg',
-  'Qatar Airways': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/9b/Qatar_Airways_Logo.svg/300px-Qatar_Airways_Logo.svg.png',
-};
 
 // Custom tooltip component
 const AirportTooltip = ({ code, fullName, children }: { code: string; fullName: string; children: React.ReactNode }) => {
@@ -98,16 +86,6 @@ export default function FlightCard({
 
   const outbound = outboundSegments[0];
   const returnFlight = returnSegments?.[0];
-  
-  // Get unique airlines - normalize the names for comparison
-  const outboundAirline = outbound.airline;
-  const returnAirline = returnFlight?.airline;
-  const normalizedOutbound = outboundAirline.toLowerCase();
-  const normalizedReturn = returnAirline?.toLowerCase();
-  const showBothAirlines = returnAirline && normalizedOutbound !== normalizedReturn;
-  
-  const outboundLogo = airlineLogos[outboundAirline] || airlineLogos[outboundAirline.toLowerCase()];
-  const returnLogo = returnAirline ? (airlineLogos[returnAirline] || airlineLogos[returnAirline.toLowerCase()]) : null;
 
   const renderFlightLeg = (
     segments: FlightSegment[], 
@@ -159,94 +137,55 @@ export default function FlightCard({
           </div>
         </div>
         
-        {/* Expanded details below - only shown when expanded */}
+        {/* Expanded details below - showing all segments */}
         {isExpanded && (
-          <div className="mt-3 space-y-2">
-            {/* THERE/BACK label */}
-            <div className="flex items-center gap-2 ml-20">
-              <Plane className="w-3 h-3 text-blue-600" />
-              <span className="text-xs font-medium text-blue-600 uppercase">
-                {direction === 'outbound' ? 'THERE' : 'BACK'}
-              </span>
-              <span className="text-xs text-gray-500">
-                {depDate}
-              </span>
-              <div className="ml-auto text-lg font-medium">
-                {formatPrice(price.amount / 2, price.currency)}
-              </div>
-            </div>
-            
-            {/* Flight segments */}
+          <div className="mt-3 px-4 pb-3">
             {segments.map((segment, index) => {
               const segDepTime = format(new Date(segment.departure.time), 'HH:mm');
               const segArrTime = format(new Date(segment.arrival.time), 'HH:mm');
-              const segDepDate = format(new Date(segment.departure.time), 'EEE');
+              const segDate = format(new Date(segment.departure.time), 'EEE dd MMM');
               
               return (
-                <div key={index} className="flex items-center gap-4 text-xs ml-20">
+                <div key={index} className="flex items-center gap-4 py-2 bg-gray-50 px-4 rounded mb-2">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 rounded">
+                    {getAirlineLogoPath(segment.airline) ? (
+                      <img 
+                        src={getAirlineLogoPath(segment.airline)!} 
+                        alt={segment.airline}
+                        className="h-3.5 w-auto object-contain flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : null}
+                    <span className="text-xs font-sans text-gray-700 whitespace-nowrap">{segment.airline}</span>
+                  </div>
+                  
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-400">
-                      {segDepDate} {segDepTime}
-                    </span>
-                    <span className="text-gray-600">{extractCityName(segment.departure.airport)}</span>
-                    <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                    <span className="text-sm font-medium">{segDepTime}</span>
+                    <span className="text-sm whitespace-nowrap">{extractCityName(segment.departure.airport)}</span>
+                    <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[11px] font-medium">
                       {extractAirportCode(segment.departure.airport)}
                     </span>
                   </div>
                   
-                  <ArrowRight className="w-3 h-3 text-gray-300" />
+                  <span className="text-gray-400">→</span>
                   
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-400">{segArrTime}</span>
-                    <span className="text-gray-600">{extractCityName(segment.arrival.airport)}</span>
-                    <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                    <span className="text-sm font-medium">{segArrTime}</span>
+                    <span className="text-sm whitespace-nowrap">{extractCityName(segment.arrival.airport)}</span>
+                    <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[11px] font-medium">
                       {extractAirportCode(segment.arrival.airport)}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-3 ml-auto">
+                  <div className="flex items-center gap-3 text-xs ml-auto">
                     <span className="text-blue-600 font-medium">{segment.flightNumber}</span>
-                    <img 
-                      src={airlineLogos[segment.airline] || airlineLogos[segment.airline.toLowerCase()]}
-                      alt={segment.airline}
-                      className="h-3 object-contain opacity-60"
-                      onError={(e) => {
-                        const img = e.currentTarget as HTMLImageElement;
-                        img.style.display = 'none';
-                        const parent = img.parentElement;
-                        if (parent) {
-                          const text = document.createElement('span');
-                          text.className = 'text-xs text-gray-400';
-                          text.textContent = segment.airline;
-                          parent.appendChild(text);
-                        }
-                      }}
-                    />
-                    <span className="text-gray-400">{segment.airline}</span>
-                    
-                    <AlertCircle className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-400 uppercase">Maintenance</span>
-                    
-                    <span className="text-gray-600 font-medium">{formatPrice(price.amount / 2, price.currency)}</span>
-                    
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-xs font-medium uppercase">
-                      Book Flight
-                    </button>
                   </div>
+                  
                 </div>
               );
             })}
-            
-            {direction === 'outbound' && (
-              <div className="flex gap-3 mt-3 ml-20">
-                <button className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded text-xs font-medium uppercase hover:bg-blue-200">
-                  Hotels: In the City
-                </button>
-                <button className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded text-xs font-medium uppercase hover:bg-blue-200">
-                  Hotels: Near the Airport
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -269,74 +208,6 @@ export default function FlightCard({
 
           {!isExpanded && (
             <div className="ml-6 flex items-center gap-3">
-              <div className="flex flex-col items-center justify-center gap-1 w-20">
-                {showBothAirlines ? (
-                  <>
-                    {outboundLogo ? (
-                      <img 
-                        src={outboundLogo} 
-                        alt={outboundAirline}
-                        className="max-h-3.5 max-w-14 object-contain opacity-60 group-hover:opacity-100 transition-opacity"
-                        onError={(e) => {
-                          const img = e.currentTarget as HTMLImageElement;
-                          img.style.display = 'none';
-                          const parent = img.parentElement;
-                          if (parent) {
-                            const text = document.createElement('span');
-                            text.className = 'text-[10px] text-gray-400';
-                            text.textContent = outboundAirline;
-                            parent.appendChild(text);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span className="text-[10px] text-gray-400">{outboundAirline}</span>
-                    )}
-                    {returnLogo ? (
-                      <img 
-                        src={returnLogo} 
-                        alt={returnAirline}
-                        className="max-h-3.5 max-w-14 object-contain opacity-60 group-hover:opacity-100 transition-opacity"
-                        onError={(e) => {
-                            const img = e.currentTarget as HTMLImageElement;
-                            img.style.display = 'none';
-                            const parent = img.parentElement;
-                            if (parent) {
-                              const text = document.createElement('span');
-                              text.className = 'text-[10px] text-gray-400';
-                              text.textContent = returnAirline || '';
-                              parent.appendChild(text);
-                            }
-                          }}
-                      />
-                    ) : (
-                      <span className="text-[10px] text-gray-400">{returnAirline}</span>
-                    )}
-                  </>
-                ) : (
-                  outboundLogo ? (
-                    <img 
-                      src={outboundLogo} 
-                      alt={outboundAirline}
-                      className="max-h-4 max-w-16 object-contain opacity-60 group-hover:opacity-100 transition-opacity"
-                      onError={(e) => {
-                        const img = e.currentTarget as HTMLImageElement;
-                        img.style.display = 'none';
-                        const parent = img.parentElement;
-                        if (parent) {
-                          const text = document.createElement('span');
-                          text.className = 'text-[11px] text-gray-400';
-                          text.textContent = outboundAirline;
-                          parent.appendChild(text);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span className="text-[11px] text-gray-400">{outboundAirline}</span>
-                  )
-                )}
-              </div>
-
               <div className="text-right">
                 <div className="text-2xl font-light">
                   {formatPrice(price.amount, price.currency)}
@@ -359,24 +230,23 @@ export default function FlightCard({
           )}
         </div>
         
-        {isExpanded && (
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="bg-gray-100 px-4 py-2 rounded-lg">
-                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Book Journey with KIWI.COM</div>
-                <div className="text-[10px] text-gray-400">(a ticketing fee will be added by part of which you directly support AZair)</div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Total:</div>
-                  <div className="text-2xl font-medium">{formatPrice(price.amount, price.currency)}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+      
+      {/* Total section when expanded */}
+      {isExpanded && (
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+          <div></div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-900">Total:</span>
+              <span className="text-xl font-bold">{formatPrice(price.amount, price.currency)}</span>
+            </div>
+            <button className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors uppercase">
+              BOOK FLIGHT
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
