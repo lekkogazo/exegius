@@ -179,10 +179,15 @@ export default function FlightCard({
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-3 text-xs ml-auto">
-                    <span className="text-blue-600 font-medium">{segment.flightNumber}</span>
+                  <div className="flex-1 flex items-center justify-center">
+                    <span className="text-blue-600 font-medium text-xs">{segment.flightNumber}</span>
                   </div>
                   
+                  {index === segments.length - 1 && (
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-gray-900">{formatPrice(price.amount / (returnSegments ? 2 : 1), price.currency)}</span>
+                    </div>
+                  )}
                 </div>
               );
             })}
