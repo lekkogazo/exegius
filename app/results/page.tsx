@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import FlightCard from '@/components/results/FlightCard';
 import FilterSidebar from '@/components/results/FilterSidebar';
-import SearchParametersBar from '@/components/results/SearchParametersBar';
+import CompactSearchBar from '@/components/results/CompactSearchBar';
 import SortDropdown from '@/components/ui/SortDropdown';
 import { calculateStayDuration } from '@/lib/utils';
 
@@ -125,28 +125,31 @@ function ResultsContent() {
   });
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* Search parameters bar */}
-      <div className="border-b border-gray-200 sticky top-0 z-10 bg-white">
+    <main className="min-h-screen bg-gray-50">
+      {/* Unified Search Bar with Back Arrow and Results */}
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-gray-600 hover:text-black text-sm">
-                ← Back
-              </Link>
-              <SearchParametersBar
-                origin={origin}
-                destination={destination}
-                departureDate={departureDate}
-                returnDate={returnDate}
-                adults={adults}
-                children={children}
-                cabinClass={cabinClass}
-                tripType={tripType}
-              />
+            <Link href="/" className="text-gray-600 hover:text-black text-sm flex-shrink-0">
+              ← Back
+            </Link>
+            
+            <div className="flex justify-center flex-1">
+              <div style={{ maxWidth: '652px', width: '100%' }}>
+                <CompactSearchBar
+                  origin={origin}
+                  destination={destination}
+                  departureDate={departureDate}
+                  returnDate={returnDate}
+                  adults={adults}
+                  children={children}
+                  cabinClass={cabinClass}
+                  tripType={tripType}
+                />
+              </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <span className="text-sm text-gray-500">
                 {loading ? 'Searching...' : `${filteredFlights.length} results`}
               </span>
