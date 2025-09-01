@@ -136,13 +136,35 @@ function ResultsContent() {
   };
 
   const filteredFlights = sortedFlights.filter(flight => {
+    // Price filter
     if (filters.maxPrice && flight.price.amount > filters.maxPrice) return false;
+    
+    // Stops filter
     if (filters.stops !== 'any') {
       if (filters.stops === 'direct' && flight.stops !== 0) return false;
       if (filters.stops === '1 stop' && flight.stops !== 1) return false;
       if (filters.stops === '2+ stops' && flight.stops < 2) return false;
     }
+    
+    // Airline filter
     if (filters.airlines.length > 0 && !filters.airlines.includes(flight.outboundSegments[0].airline)) return false;
+    
+    // Departure time filter
+    if (filters.departureTime && filters.departureTime !== 'any') {
+      const depTime = new Date(flight.outboundSegments[0].departure.time);
+      const hour = depTime.getHours();
+      
+      if (filters.departureTime === 'morning' && (hour < 6 || hour >= 12)) return false;
+      if (filters.departureTime === 'afternoon' && (hour < 12 || hour >= 18)) return false;
+      if (filters.departureTime === 'evening' && (hour < 18 || hour >= 24)) return false;
+    }
+    
+    // Duration filter (in hours)
+    if (filters.duration) {
+      const totalDurationHours = flight.totalDuration / 60;
+      if (totalDurationHours > filters.duration) return false;
+    }
+    
     return true;
   });
 

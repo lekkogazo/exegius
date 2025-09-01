@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface FilterSidebarProps {
   onFiltersChange: (filters: any) => void;
@@ -10,10 +10,15 @@ interface FilterSidebarProps {
 
 export default function FilterSidebar({ onFiltersChange, availableAirlines = [], initialStops = 'any' }: FilterSidebarProps) {
   const [stops, setStops] = useState<string>(initialStops);
-  const [maxPrice, setMaxPrice] = useState(500);
+  const [maxPrice, setMaxPrice] = useState(1500);
   const [airlines, setAirlines] = useState<string[]>([]);
   const [departureTime, setDepartureTime] = useState<string>('any');
   const [duration, setDuration] = useState<number>(24);
+  
+  // Apply initial filters on mount
+  useEffect(() => {
+    onFiltersChange({ stops: initialStops, maxPrice, airlines, departureTime, duration });
+  }, []);
 
   const handleStopsChange = (value: string) => {
     setStops(value);
@@ -164,11 +169,11 @@ export default function FilterSidebar({ onFiltersChange, availableAirlines = [],
         <button
           onClick={() => {
             setStops('any');
-            setMaxPrice(500);
+            setMaxPrice(1500);
             setAirlines([]);
             setDepartureTime('any');
             setDuration(24);
-            onFiltersChange({ stops: 'any', maxPrice: 500, airlines: [], departureTime: 'any', duration: 24 });
+            onFiltersChange({ stops: 'any', maxPrice: 1500, airlines: [], departureTime: 'any', duration: 24 });
           }}
           className="w-full py-2 border border-gray-200 text-sm hover:bg-gray-50 transition-colors"
         >
