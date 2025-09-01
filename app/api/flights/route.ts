@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import AmadeusAPI from '@/lib/amadeus';
+import FlightAPI from '@/lib/flightapi';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const adults = parseInt(searchParams.get('adults') || '1');
     const children = parseInt(searchParams.get('children') || '0');
     const cabinClass = searchParams.get('cabinClass') || 'Economy';
+    const directOnly = searchParams.get('directOnly') === 'true';
     
     // Validate required parameters
     if (!origin || !destination || !departureDate) {
@@ -23,81 +24,53 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Extract IATA codes from airport strings (e.g., "New York (JFK)" -> "JFK")
-    const extractIataCode = (airport: string): string => {
-      const match = airport.match(/\(([A-Z]{3})\)/);
-      return match ? match[1] : airport.toUpperCase().slice(0, 3);
-    };
-
-    const originCode = extractIataCode(origin);
-    const destinationCode = extractIataCode(destination);
-
-    // Check if Amadeus API is configured
-    const hasAmadeusConfig = process.env.AMADEUS_API_KEY && process.env.AMADEUS_API_SECRET;
-    
-    if (!hasAmadeusConfig) {
-      // Return mock data if no Amadeus API credentials are configured
-      const mockParams = {
-        origin: originCode,
-        destination: destinationCode,
-        departureDate,
-        returnDate,
-        tripType,
-        adults,
-        children,
-        cabinClass,
-      };
-      
-      return NextResponse.json({
-        flights: generateMockFlights(mockParams),
-        message: 'Using mock data. Configure AMADEUS_API_KEY and AMADEUS_API_SECRET in .env.local for real data.',
-      });
-    }
-
-    // Format dates for Amadeus API (YYYY-MM-DD format)
-    const formatDateForAmadeus = (dateString: string): string => {
+    // Format dates for API (YYYY-MM-DD format)
+    const formatDate = (dateString: string): string => {
       const date = new Date(dateString);
       return date.toISOString().split('T')[0];
     };
 
-    const formattedDepartureDate = formatDateForAmadeus(departureDate);
-    const formattedReturnDate = returnDate ? formatDateForAmadeus(returnDate) : undefined;
+    const formattedDepartureDate = formatDate(departureDate);
+    const formattedReturnDate = returnDate ? formatDate(returnDate) : undefined;
 
-    // Use Amadeus API
-    const amadeus = new AmadeusAPI();
-    const flights = await amadeus.searchFlights({
-      origin: originCode,
-      destination: destinationCode,
+    // Initialize FlightAPI
+    // If USE_MOCK_FLIGHTS is true or no API key, it will use mock data
+    const flightAPI = new FlightAPI({
+      useMockData: process.env.USE_MOCK_FLIGHTS === 'true',
+    });
+
+    // Search for flights
+    const flights = await flightAPI.searchFlights({
+      origin,
+      destination,
       departureDate: formattedDepartureDate,
       returnDate: tripType === 'roundtrip' ? formattedReturnDate : undefined,
       adults,
       children: children > 0 ? children : undefined,
       cabinClass: cabinClass.toLowerCase(),
       currencyCode: 'EUR',
+      directOnly,
     });
 
-    return NextResponse.json({ flights });
+    // Add message about mock data if no API key
+    const isUsingMockData = !process.env.FLIGHTAPI_KEY || process.env.USE_MOCK_FLIGHTS === 'true';
+    
+    return NextResponse.json({
+      flights,
+      ...(isUsingMockData && {
+        message: 'Using mock data to preserve API calls. Set FLIGHTAPI_KEY in .env.local and USE_MOCK_FLIGHTS=false for real data.',
+      }),
+    });
   } catch (error: any) {
     console.error('Error in flight search API:', error);
     
-    // If Amadeus API fails, fallback to mock data
-    const searchParams = request.nextUrl.searchParams;
-    const mockParams = {
-      origin: searchParams.get('origin')?.match(/\(([A-Z]{3})\)/)?.[1] || 'JFK',
-      destination: searchParams.get('destination')?.match(/\(([A-Z]{3})\)/)?.[1] || 'LAX',
-      departureDate: searchParams.get('departureDate') || '',
-      returnDate: searchParams.get('returnDate'),
-      tripType: searchParams.get('tripType') || 'roundtrip',
-      adults: parseInt(searchParams.get('adults') || '1'),
-      children: parseInt(searchParams.get('children') || '0'),
-      cabinClass: searchParams.get('cabinClass') || 'Economy',
-    };
-    
-    return NextResponse.json({
-      flights: generateMockFlights(mockParams),
-      message: 'Amadeus API error, using mock data as fallback.',
-      error: error.message
-    });
+    return NextResponse.json(
+      { 
+        error: 'Failed to search flights',
+        message: error.message 
+      },
+      { status: 500 }
+    );
   }
 }
 

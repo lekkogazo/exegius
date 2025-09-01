@@ -176,8 +176,8 @@ export default function FlightCard({
                   
                   <div className="flex items-center ml-2">
                     <span className="text-sm font-medium w-11 text-right">{segDepTime}</span>
-                    <span className="text-sm ml-2 w-14 truncate">{segDepCity}</span>
-                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1 flex-shrink-0">
+                    <span className="text-sm ml-2 w-16 truncate">{segDepCity}</span>
+                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1 w-10 text-center flex-shrink-0">
                       {segDepCode}
                     </span>
                   </div>
@@ -186,8 +186,8 @@ export default function FlightCard({
                   
                   <div className="flex items-center">
                     <span className="text-sm font-medium w-11 text-right">{segArrTime}</span>
-                    <span className="text-sm ml-2 w-14 truncate">{segArrCity}</span>
-                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1 flex-shrink-0">
+                    <span className="text-sm ml-2 w-16 truncate">{segArrCity}</span>
+                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1 w-10 text-center flex-shrink-0">
                       {segArrCode}
                     </span>
                   </div>
