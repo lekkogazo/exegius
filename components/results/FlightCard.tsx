@@ -2,7 +2,7 @@
 
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowRight, ChevronDown, ChevronUp, Plane, Clock, Luggage, Info, Coffee, Shield } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { getAirlineLogoPath, getAirlineName } from '@/lib/airline-codes';
 
@@ -218,7 +218,7 @@ export default function FlightCard({
           </div>
 
           {!isExpanded && (
-            <div className="text-right mr-8">
+            <div className="text-right">
               <div className="text-2xl font-light">
                 {formatPrice(price.amount, price.currency)}
               </div>
@@ -229,14 +229,6 @@ export default function FlightCard({
               )}
             </div>
           )}
-          
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </div>
         </div>
         
       </div>
