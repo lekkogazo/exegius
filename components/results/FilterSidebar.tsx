@@ -5,10 +5,11 @@ import { useState } from 'react';
 interface FilterSidebarProps {
   onFiltersChange: (filters: any) => void;
   availableAirlines?: string[];
+  initialStops?: string;
 }
 
-export default function FilterSidebar({ onFiltersChange, availableAirlines = [] }: FilterSidebarProps) {
-  const [stops, setStops] = useState<string>('any');
+export default function FilterSidebar({ onFiltersChange, availableAirlines = [], initialStops = 'any' }: FilterSidebarProps) {
+  const [stops, setStops] = useState<string>(initialStops);
   const [maxPrice, setMaxPrice] = useState(500);
   const [airlines, setAirlines] = useState<string[]>([]);
   const [departureTime, setDepartureTime] = useState<string>('any');

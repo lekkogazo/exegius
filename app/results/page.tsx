@@ -67,9 +67,13 @@ function ResultsContent() {
   const [flights, setFlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'departure'>('price');
+  
+  // Check if directOnly is set from homepage
+  const directOnly = searchParams.get('directOnly') === 'true';
+  
   const [filters, setFilters] = useState({
     maxPrice: 1500,
-    stops: 'any',
+    stops: directOnly ? 'direct' : 'any',
     airlines: [] as string[],
     departureTime: 'any',
     duration: 24,
@@ -192,7 +196,11 @@ function ResultsContent() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex gap-8">
           {/* Filter Sidebar */}
-          <FilterSidebar onFiltersChange={handleFiltersChange} availableAirlines={availableAirlines} />
+          <FilterSidebar 
+            onFiltersChange={handleFiltersChange} 
+            availableAirlines={availableAirlines}
+            initialStops={directOnly ? 'direct' : 'any'}
+          />
           
           {/* Results - centered with empty space on right */}
           <div className="flex-1">

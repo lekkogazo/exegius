@@ -140,7 +140,7 @@ export default function FlightCard({
         
         {/* Expanded details below - showing all segments */}
         {isExpanded && (
-          <div className="mt-3 pb-3">
+          <div className="mt-3 pb-3 pr-12">
             {segments.map((segment, index) => {
               const segDepTime = format(new Date(segment.departure.time), 'HH:mm');
               const segArrTime = format(new Date(segment.arrival.time), 'HH:mm');
@@ -155,47 +155,45 @@ export default function FlightCard({
               const shouldShowLogo = logoPath && !failedLogos.has(logoKey);
               
               return (
-                <div key={index} className="flex items-center py-2 bg-gray-50 px-4 rounded mb-2 ml-20 mr-32">
-                  <div className="inline-flex items-center gap-2 min-w-[140px] flex-shrink-0">
+                <div key={index} className="flex items-center py-2 bg-gray-50 px-3 rounded mb-2 ml-24 mr-4">
+                  <div className="inline-flex items-center gap-2 min-w-[120px] max-w-[140px] flex-shrink-0">
                     {shouldShowLogo ? (
                       <img 
                         src={logoPath} 
                         alt={airlineName}
-                        className="h-5 w-auto object-contain"
+                        className="h-5 w-auto object-contain flex-shrink-0"
                         onError={() => {
                           setFailedLogos(prev => new Set(prev).add(logoKey));
                         }}
                       />
                     ) : (
-                      <span className="text-xs font-bold text-gray-600 w-6 text-center">
+                      <span className="text-xs font-bold text-gray-600 w-6 text-center flex-shrink-0">
                         {segment.airline.substring(0, 2).toUpperCase()}
                       </span>
                     )}
-                    <span className="text-xs text-gray-700">{airlineName}</span>
+                    <span className="text-xs text-gray-700 truncate">{airlineName}</span>
                   </div>
                   
-                  <div className="flex items-center ml-4">
-                    <span className="text-sm font-medium w-12 text-right">{segDepTime}</span>
-                    <span className="text-sm ml-2 w-20">{segDepCity}</span>
-                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1">
+                  <div className="flex items-center ml-2">
+                    <span className="text-sm font-medium w-11 text-right">{segDepTime}</span>
+                    <span className="text-sm ml-2 w-14 truncate">{segDepCity}</span>
+                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1 flex-shrink-0">
                       {segDepCode}
                     </span>
                   </div>
                   
-                  <span className="text-gray-400 mx-3">→</span>
+                  <span className="text-gray-400 mx-2 flex-shrink-0">→</span>
                   
                   <div className="flex items-center">
-                    <span className="text-sm font-medium w-12 text-right">{segArrTime}</span>
-                    <span className="text-sm ml-2 w-20">{segArrCity}</span>
-                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1">
+                    <span className="text-sm font-medium w-11 text-right">{segArrTime}</span>
+                    <span className="text-sm ml-2 w-14 truncate">{segArrCity}</span>
+                    <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] text-gray-500 ml-1 flex-shrink-0">
                       {segArrCode}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-3 ml-auto">
-                    <span className="text-blue-600 font-medium text-xs">{segment.flightNumber}</span>
-                    <div className="text-xs text-gray-500 whitespace-nowrap">{formatDuration(segment.duration)}</div>
-                  </div>
+                  <span className="text-blue-600 font-medium text-xs ml-4 min-w-[60px]">{segment.flightNumber}</span>
+                  <div className="text-xs text-gray-500 whitespace-nowrap ml-auto">{formatDuration(segment.duration)}</div>
                 </div>
               );
             })}
@@ -206,40 +204,38 @@ export default function FlightCard({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-sm transition-all group">
+    <div className="bg-white border border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-sm transition-all group relative">
       <div 
         className="p-4 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
+        <div className="flex items-center">
+          <div className="flex-1 pr-4">
             <div className={isExpanded ? "space-y-6" : "space-y-2"}>
               {renderFlightLeg(outboundSegments, 'outbound')}
               {returnSegments && renderFlightLeg(returnSegments, 'return')}
             </div>
           </div>
 
-          <div className="ml-6 flex items-center gap-3">
-            {!isExpanded && (
-              <div className="text-right">
-                <div className="text-2xl font-light">
-                  {formatPrice(price.amount, price.currency)}
-                </div>
-                {stayDuration && (
-                  <div className="text-[10px] text-gray-400 mt-0.5 whitespace-nowrap">
-                    Length of stay: {stayDuration} days
-                  </div>
-                )}
+          {!isExpanded && (
+            <div className="text-right mr-8">
+              <div className="text-2xl font-light">
+                {formatPrice(price.amount, price.currency)}
               </div>
-            )}
-            
-            <div className="flex items-center gap-2">
-              {isExpanded ? (
-                <ChevronUp className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
+              {stayDuration && (
+                <div className="text-[10px] text-gray-400 mt-0.5 whitespace-nowrap">
+                  Length of stay: {stayDuration} days
+                </div>
               )}
             </div>
+          )}
+          
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            {isExpanded ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
           </div>
         </div>
         
