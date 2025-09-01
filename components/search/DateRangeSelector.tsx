@@ -68,18 +68,17 @@ export default function DateRangeSelector({
   };
 
   const isDateInRange = (date: Date) => {
-    if (!departureDate) return false;
+    if (!departureDate || !returnDate) return false;
     
-    if (isSelectingReturn && hoveredDate) {
-      return date >= departureDate && date <= hoveredDate;
-    }
+    // Check if date is between departure and return dates (exclusive of endpoints)
+    return date > departureDate && date < returnDate;
+  };
+  
+  const isDateInHoverRange = (date: Date) => {
+    if (!departureDate || !isSelectingReturn || !hoveredDate) return false;
     
-    if (!isSelectingReturn && returnDate) {
-      return (isAfter(date, departureDate) || date.getTime() === departureDate.getTime()) && 
-             (isBefore(date, returnDate) || date.getTime() === returnDate.getTime());
-    }
-    
-    return false;
+    // Check if date is between departure and hovered date
+    return date > departureDate && date < hoveredDate;
   };
 
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -155,6 +154,7 @@ export default function DateRangeSelector({
               const isDeparture = departureDate && day.getTime() === departureDate.getTime();
               const isReturn = returnDate && day.getTime() === returnDate.getTime();
               const isInRange = isDateInRange(day);
+              const isInHoverRange = isDateInHoverRange(day);
               const isTodayDate = isToday(day);
               
               return (
@@ -165,12 +165,12 @@ export default function DateRangeSelector({
                   onMouseLeave={() => setHoveredDate(null)}
                   disabled={isDisabled}
                   className={cn(
-                    'h-7 text-xs transition-colors',
+                    'h-7 text-xs transition-colors relative',
                     isDisabled && 'text-gray-300 cursor-not-allowed',
                     !isDisabled && 'hover:bg-gray-100 cursor-pointer',
-                    isDeparture && 'bg-black text-white hover:bg-gray-800',
-                    isReturn && 'bg-black text-white hover:bg-gray-800',
-                    isInRange && !isDeparture && !isReturn && 'bg-gray-200',
+                    (isDeparture || isReturn) && 'bg-black text-white hover:bg-gray-800 font-medium',
+                    isInRange && !isDeparture && !isReturn && 'bg-gray-100',
+                    isInHoverRange && !isDeparture && !isReturn && 'bg-gray-100',
                     isTodayDate && !isDeparture && !isReturn && 'font-bold',
                   )}
                 >

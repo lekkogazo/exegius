@@ -24,11 +24,11 @@ const generateMockFlights = (params: any) => {
       id: `flight-${i}`,
       outboundSegments: [{
         departure: {
-          airport: params.origin?.split(',')[0] || 'NRN',
+          airport: params.origin || 'Düsseldorf (NRN)',
           time: new Date(outboundDate.setHours(12 + i, 20)).toISOString(),
         },
         arrival: {
-          airport: params.destination?.split(',')[0] || 'BGY',
+          airport: params.destination || 'Milan (BGY)',
           time: new Date(outboundDate.setHours(13 + i, 55)).toISOString(),
         },
         airline: airlines[i % airlines.length],
@@ -37,11 +37,11 @@ const generateMockFlights = (params: any) => {
       }],
       returnSegments: returnDate ? [{
         departure: {
-          airport: params.destination?.split(',')[0] || 'BGY',
+          airport: params.destination || 'Milan (BGY)',
           time: new Date(returnDate.setHours(16 + i % 8, 15)).toISOString(),
         },
         arrival: {
-          airport: params.origin?.split(',')[0] || 'NRN',
+          airport: params.origin || 'Düsseldorf (NRN)',
           time: new Date(returnDate.setHours(17 + i % 8, 50)).toISOString(),
         },
         airline: airlines[i % airlines.length],
@@ -76,14 +76,32 @@ function ResultsContent() {
   });
 
   useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      const params = Object.fromEntries(searchParams.entries());
-      const mockFlights = generateMockFlights(params);
-      setFlights(mockFlights);
-      setLoading(false);
-    }, 1000);
+    const fetchFlights = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        searchParams.forEach((value, key) => {
+          params.append(key, value);
+        });
+
+        const response = await fetch(`/api/flights?${params.toString()}`);
+        const data = await response.json();
+        
+        if (data.flights) {
+          setFlights(data.flights);
+        } else {
+          console.error('No flights data received');
+          setFlights([]);
+        }
+      } catch (error) {
+        console.error('Error fetching flights:', error);
+        setFlights([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFlights();
   }, [searchParams]);
 
   const sortedFlights = [...flights].sort((a, b) => {
@@ -123,6 +141,9 @@ function ResultsContent() {
     if (filters.airlines.length > 0 && !filters.airlines.includes(flight.outboundSegments[0].airline)) return false;
     return true;
   });
+
+  // Get unique airlines from the search results
+  const availableAirlines = [...new Set(flights.map(flight => flight.outboundSegments[0].airline))].sort();
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -171,7 +192,7 @@ function ResultsContent() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex gap-8">
           {/* Filter Sidebar */}
-          <FilterSidebar onFiltersChange={handleFiltersChange} />
+          <FilterSidebar onFiltersChange={handleFiltersChange} availableAirlines={availableAirlines} />
           
           {/* Results - centered with empty space on right */}
           <div className="flex-1">

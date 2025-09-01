@@ -24,3 +24,79 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes drift {
+  0%, 100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(100px) translateY(-50px);
+  }
+}
+
+@keyframes drift-reverse {
+  0%, 100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-100px) translateY(50px);
+  }
+}
+
+@keyframes path {
+  to {
+    stroke-dashoffset: -500;
+  }
+}
+
+@keyframes glide {
+  0% {
+    transform: translateX(-100px) translateY(250px);
+  }
+  100% {
+    transform: translateX(1500px) translateY(250px);
+  }
+}
+
+@keyframes fade-float {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(-10px);
+  }
+}
+
+.animate-drift {
+  animation: drift 20s ease-in-out infinite;
+}
+
+.animate-drift-reverse {
+  animation: drift-reverse 20s ease-in-out infinite;
+}
+
+.animate-path {
+  animation: path 30s linear infinite;
+}
+
+.animate-glide {
+  animation: glide 40s linear infinite;
+}
+
+.animate-fade-float {
+  animation: fade-float 8s ease-in-out infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}

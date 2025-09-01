@@ -1,22 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isBefore } from 'date-fns';
-
-const AIRPORTS = [
-  { code: 'JFK', city: 'New York', name: 'John F. Kennedy' },
-  { code: 'LHR', city: 'London', name: 'Heathrow' },
-  { code: 'CDG', city: 'Paris', name: 'Charles de Gaulle' },
-  { code: 'DXB', city: 'Dubai', name: 'International' },
-  { code: 'HND', city: 'Tokyo', name: 'Haneda' },
-  { code: 'SIN', city: 'Singapore', name: 'Changi' },
-  { code: 'LAX', city: 'Los Angeles', name: 'International' },
-  { code: 'FRA', city: 'Frankfurt', name: 'Main' },
-  { code: 'AMS', city: 'Amsterdam', name: 'Schiphol' },
-  { code: 'MAD', city: 'Madrid', name: 'Barajas' },
-];
 
 export default function FlightSearchForm() {
   const router = useRouter();
@@ -42,6 +29,52 @@ export default function FlightSearchForm() {
   const [nearbyAirports, setNearbyAirports] = useState(false);
   const [directOnly, setDirectOnly] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  // Airport suggestions state
+  const [originSuggestions, setOriginSuggestions] = useState<any[]>([]);
+  const [destSuggestions, setDestSuggestions] = useState<any[]>([]);
+
+  // Fetch airport suggestions for origin
+  useEffect(() => {
+    const fetchOriginSuggestions = async () => {
+      if (origin.length >= 2) {
+        try {
+          const response = await fetch(`/api/airports?query=${encodeURIComponent(origin)}`);
+          const suggestions = await response.json();
+          setOriginSuggestions(suggestions);
+        } catch (error) {
+          console.error('Error fetching origin suggestions:', error);
+          setOriginSuggestions([]);
+        }
+      } else {
+        setOriginSuggestions([]);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchOriginSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [origin]);
+
+  // Fetch airport suggestions for destination
+  useEffect(() => {
+    const fetchDestSuggestions = async () => {
+      if (destination.length >= 2) {
+        try {
+          const response = await fetch(`/api/airports?query=${encodeURIComponent(destination)}`);
+          const suggestions = await response.json();
+          setDestSuggestions(suggestions);
+        } catch (error) {
+          console.error('Error fetching dest suggestions:', error);
+          setDestSuggestions([]);
+        }
+      } else {
+        setDestSuggestions([]);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchDestSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [destination]);
 
   const handleSearch = () => {
     if (!origin || !destination || !departureDate) {
@@ -53,14 +86,18 @@ export default function FlightSearchForm() {
       origin,
       destination,
       departureDate: departureDate.toISOString(),
-      returnDate: returnDate?.toISOString() || '',
-      tripType,
+      tripType: tripType === 'return' ? 'roundtrip' : 'oneway',
       adults: adults.toString(),
       children: children.toString(),
       cabinClass,
       nearbyAirports: nearbyAirports.toString(),
       directOnly: directOnly.toString(),
     });
+
+    // Only add returnDate if it's a round trip and returnDate exists
+    if (tripType === 'return' && returnDate) {
+      params.set('returnDate', returnDate.toISOString());
+    }
 
     router.push(`/results?${params.toString()}`);
   };
@@ -175,15 +212,6 @@ export default function FlightSearchForm() {
     );
   };
 
-  const filteredOriginAirports = AIRPORTS.filter(a => 
-    a.code.toLowerCase().includes(origin.toLowerCase()) ||
-    a.city.toLowerCase().includes(origin.toLowerCase())
-  );
-
-  const filteredDestAirports = AIRPORTS.filter(a => 
-    a.code.toLowerCase().includes(destination.toLowerCase()) ||
-    a.city.toLowerCase().includes(destination.toLowerCase())
-  );
 
   return (
     <div className="w-full">
@@ -228,11 +256,11 @@ export default function FlightSearchForm() {
                 className="w-full px-4 pt-7 pb-3 bg-white border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:border-gray-400 focus:outline-none"
               />
               
-              {showOriginSuggestions && origin.length > 0 && filteredOriginAirports.length > 0 && (
+              {showOriginSuggestions && origin.length > 0 && originSuggestions.length > 0 && (
                 <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-48 overflow-auto">
-                  {filteredOriginAirports.map(airport => (
+                  {originSuggestions.map((airport, index) => (
                     <button
-                      key={airport.code}
+                      key={`${airport.code}-${index}`}
                       onClick={() => {
                         setOrigin(`${airport.city} (${airport.code})`);
                         setShowOriginSuggestions(false);
@@ -259,11 +287,11 @@ export default function FlightSearchForm() {
                 className="w-full px-4 pt-7 pb-3 bg-white border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:border-gray-400 focus:outline-none"
               />
               
-              {showDestSuggestions && destination.length > 0 && filteredDestAirports.length > 0 && (
+              {showDestSuggestions && destination.length > 0 && destSuggestions.length > 0 && (
                 <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-48 overflow-auto">
-                  {filteredDestAirports.map(airport => (
+                  {destSuggestions.map((airport, index) => (
                     <button
-                      key={airport.code}
+                      key={`${airport.code}-${index}`}
                       onClick={() => {
                         setDestination(`${airport.city} (${airport.code})`);
                         setShowDestSuggestions(false);

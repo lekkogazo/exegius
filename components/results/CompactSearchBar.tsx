@@ -84,12 +84,16 @@ export default function CompactSearchBar({
       origin: searchParams.origin,
       destination: searchParams.destination,
       departureDate: searchParams.departureDate?.toISOString() || '',
-      returnDate: searchParams.tripType === 'roundtrip' ? (searchParams.returnDate?.toISOString() || '') : '',
       tripType: searchParams.tripType,
       adults: searchParams.adults.toString(),
       children: searchParams.children.toString(),
       cabinClass: searchParams.cabinClass,
     });
+
+    // Only add returnDate if it's a round trip and returnDate exists
+    if (searchParams.tripType === 'roundtrip' && searchParams.returnDate) {
+      params.set('returnDate', searchParams.returnDate.toISOString());
+    }
 
     router.push(`/results?${params.toString()}`);
     setActiveDropdown(null);
@@ -105,15 +109,49 @@ export default function CompactSearchBar({
     setDestInput(originInput);
   };
 
-  const filteredOriginAirports = AIRPORTS.filter(a => 
-    a.code.toLowerCase().includes(originInput.toLowerCase()) ||
-    a.city.toLowerCase().includes(originInput.toLowerCase())
-  );
+  const [originSuggestions, setOriginSuggestions] = useState<any[]>([]);
+  const [destSuggestions, setDestSuggestions] = useState<any[]>([]);
 
-  const filteredDestAirports = AIRPORTS.filter(a => 
-    a.code.toLowerCase().includes(destInput.toLowerCase()) ||
-    a.city.toLowerCase().includes(destInput.toLowerCase())
-  );
+  // Fetch airport suggestions
+  useEffect(() => {
+    const fetchOriginSuggestions = async () => {
+      if (originInput.length >= 2) {
+        try {
+          const response = await fetch(`/api/airports?query=${encodeURIComponent(originInput)}`);
+          const suggestions = await response.json();
+          setOriginSuggestions(suggestions);
+        } catch (error) {
+          console.error('Error fetching origin suggestions:', error);
+          setOriginSuggestions([]);
+        }
+      } else {
+        setOriginSuggestions([]);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchOriginSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [originInput]);
+
+  useEffect(() => {
+    const fetchDestSuggestions = async () => {
+      if (destInput.length >= 2) {
+        try {
+          const response = await fetch(`/api/airports?query=${encodeURIComponent(destInput)}`);
+          const suggestions = await response.json();
+          setDestSuggestions(suggestions);
+        } catch (error) {
+          console.error('Error fetching dest suggestions:', error);
+          setDestSuggestions([]);
+        }
+      } else {
+        setDestSuggestions([]);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchDestSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [destInput]);
 
   const totalPassengers = searchParams.adults + searchParams.children;
 
@@ -306,9 +344,9 @@ export default function CompactSearchBar({
                 autoFocus
               />
               <div className="mt-2 max-h-48 overflow-auto">
-                {filteredOriginAirports.map(airport => (
+                {originSuggestions.map((airport, index) => (
                   <button
-                    key={airport.code}
+                    key={`${airport.code}-${index}`}
                     onClick={() => {
                       setSearchParams(prev => ({ ...prev, origin: `${airport.city} (${airport.code})` }));
                       setOriginInput(`${airport.city} (${airport.code})`);
@@ -353,9 +391,9 @@ export default function CompactSearchBar({
                 autoFocus
               />
               <div className="mt-2 max-h-48 overflow-auto">
-                {filteredDestAirports.map(airport => (
+                {destSuggestions.map((airport, index) => (
                   <button
-                    key={airport.code}
+                    key={`${airport.code}-${index}`}
                     onClick={() => {
                       setSearchParams(prev => ({ ...prev, destination: `${airport.city} (${airport.code})` }));
                       setDestInput(`${airport.city} (${airport.code})`);

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
 
 interface FilterSidebarProps {
   onFiltersChange: (filters: any) => void;
+  availableAirlines?: string[];
 }
 
-export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
+export default function FilterSidebar({ onFiltersChange, availableAirlines = [] }: FilterSidebarProps) {
   const [stops, setStops] = useState<string>('any');
   const [maxPrice, setMaxPrice] = useState(500);
   const [airlines, setAirlines] = useState<string[]>([]);
@@ -32,7 +32,17 @@ export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
     onFiltersChange({ stops, maxPrice, airlines: newAirlines, departureTime, duration });
   };
 
-  const airlinesList = ['Ryanair', 'EasyJet', 'Lufthansa', 'KLM', 'Air France', 'British Airways'];
+  const handleDepartureTimeChange = (value: string) => {
+    setDepartureTime(value);
+    onFiltersChange({ stops, maxPrice, airlines, departureTime: value, duration });
+  };
+
+  const handleDurationChange = (value: number) => {
+    setDuration(value);
+    onFiltersChange({ stops, maxPrice, airlines, departureTime, duration: value });
+  };
+
+  const airlinesList = availableAirlines.length > 0 ? availableAirlines : [];
   const timeSlots = [
     { value: 'any', label: 'Any time' },
     { value: 'morning', label: 'Morning (6am-12pm)' },
@@ -50,7 +60,7 @@ export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
           <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Stops</h3>
           <div className="space-y-2">
             {['any', 'direct', '1 stop', '2+ stops'].map(option => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
+              <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 -mx-2">
                 <input
                   type="radio"
                   name="stops"
@@ -68,51 +78,56 @@ export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
         <div className="mb-6">
           <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Max price</h3>
           <div className="space-y-2">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-600">Up to</span>
+              <span className="text-sm font-medium">€{maxPrice}</span>
+            </div>
             <input
               type="range"
               min="50"
               max="1500"
               value={maxPrice}
               onChange={(e) => handlePriceChange(parseInt(e.target.value))}
-              className="w-full"
+              className="w-full accent-black"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-gray-400">
               <span>€50</span>
-              <span className="font-medium text-black">€{maxPrice}</span>
               <span>€1500</span>
             </div>
           </div>
         </div>
 
         {/* Airlines */}
-        <div className="mb-6">
-          <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Airlines</h3>
-          <div className="space-y-2">
-            {airlinesList.map(airline => (
-              <label key={airline} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={airlines.includes(airline)}
-                  onChange={() => toggleAirline(airline)}
-                  className="rounded border-gray-300"
-                />
-                <span className="text-sm">{airline}</span>
-              </label>
-            ))}
+        {airlinesList.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Airlines</h3>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {airlinesList.map(airline => (
+                <label key={airline} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 -mx-2">
+                  <input
+                    type="checkbox"
+                    checked={airlines.includes(airline)}
+                    onChange={() => toggleAirline(airline)}
+                    className="rounded border-gray-300 text-black focus:ring-black"
+                  />
+                  <span className="text-sm">{airline}</span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Departure time */}
         <div className="mb-6">
           <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Departure time</h3>
           <div className="space-y-2">
             {timeSlots.map(slot => (
-              <label key={slot.value} className="flex items-center gap-2 cursor-pointer">
+              <label key={slot.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 -mx-2">
                 <input
                   type="radio"
                   name="departureTime"
                   checked={departureTime === slot.value}
-                  onChange={() => setDepartureTime(slot.value)}
+                  onChange={() => handleDepartureTimeChange(slot.value)}
                   className="text-black focus:ring-black"
                 />
                 <span className="text-sm">{slot.label}</span>
@@ -125,17 +140,20 @@ export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
         <div className="mb-6">
           <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Max duration</h3>
           <div className="space-y-2">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-600">Up to</span>
+              <span className="text-sm font-medium">{duration} hours</span>
+            </div>
             <input
               type="range"
               min="2"
               max="24"
               value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value))}
-              className="w-full"
+              onChange={(e) => handleDurationChange(parseInt(e.target.value))}
+              className="w-full accent-black"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-gray-400">
               <span>2h</span>
-              <span className="font-medium text-black">{duration}h</span>
               <span>24h</span>
             </div>
           </div>
@@ -151,7 +169,7 @@ export default function FilterSidebar({ onFiltersChange }: FilterSidebarProps) {
             setDuration(24);
             onFiltersChange({ stops: 'any', maxPrice: 500, airlines: [], departureTime: 'any', duration: 24 });
           }}
-          className="w-full py-2 border border-gray-200 rounded-lg text-sm hover:border-gray-400 transition-colors"
+          className="w-full py-2 border border-gray-200 text-sm hover:bg-gray-50 transition-colors"
         >
           Clear all
         </button>
