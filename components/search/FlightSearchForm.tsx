@@ -192,11 +192,12 @@ export default function FlightSearchForm() {
                 onMouseLeave={() => setHoveredDate(null)}
                 disabled={isDisabled}
                 className={cn(
-                  'h-8 text-sm rounded hover:bg-gray-100 transition-colors',
+                  'h-8 text-sm rounded transition-colors',
                   isDisabled && 'text-gray-300 cursor-not-allowed',
+                  !isDeparture && !isReturn && 'hover:bg-gray-100',
                   isTodayDate && !isDeparture && !isReturn && 'font-bold',
-                  (isDeparture || isReturn) && 'bg-black text-white hover:bg-gray-800',
-                  (isInRange || isStaticRange) && 'bg-gray-200'
+                  (isDeparture || isReturn) && 'bg-black text-white hover:bg-black',
+                  (isInRange || isStaticRange) && !isDeparture && !isReturn && 'bg-gray-200'
                 )}
               >
                 {format(day, 'd')}

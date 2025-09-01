@@ -167,8 +167,8 @@ export default function DateRangeSelector({
                   className={cn(
                     'h-7 text-xs transition-colors relative',
                     isDisabled && 'text-gray-300 cursor-not-allowed',
-                    !isDisabled && 'hover:bg-gray-100 cursor-pointer',
-                    (isDeparture || isReturn) && 'bg-black text-white hover:bg-gray-800 font-medium',
+                    !isDisabled && !isDeparture && !isReturn && 'hover:bg-gray-100 cursor-pointer',
+                    (isDeparture || isReturn) && 'bg-black text-white hover:bg-black font-medium',
                     isInRange && !isDeparture && !isReturn && 'bg-gray-100',
                     isInHoverRange && !isDeparture && !isReturn && 'bg-gray-100',
                     isTodayDate && !isDeparture && !isReturn && 'font-bold',
