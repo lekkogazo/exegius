@@ -215,7 +215,7 @@ class AmadeusAPI {
         totalDuration: 120,
         stops: 0,
         bookingUrl: '#',
-        stayDuration: returnDate ? this.calculateStayDuration(
+        stayDuration: returnDate && returnSegments ? this.calculateStayDuration(
           outboundSegments[0].arrival.time,
           returnSegments[0].departure.time
         ) : undefined,
