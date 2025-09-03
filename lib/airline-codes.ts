@@ -4,6 +4,7 @@ export const iataToName: Record<string, string> = {
   'FR': 'Ryanair',
   'U2': 'easyJet',
   'W6': 'Wizz Air',
+  'W4': 'Wizz Air Malta',
   'VY': 'Vueling',
   'LH': 'Lufthansa',
   'AF': 'Air France',
@@ -68,6 +69,7 @@ export const iataToICAO: Record<string, string> = {
   'FR': 'RYR', // Ryanair
   'U2': 'EZY', // easyJet
   'W6': 'WZZ', // Wizz Air
+  'W4': 'WZZ', // Wizz Air Malta (uses same logo)
   'VY': 'VLG', // Vueling
   'LH': 'DLH', // Lufthansa
   'AF': 'AFR', // Air France
