@@ -14,10 +14,12 @@ export const iataToName: Record<string, string> = {
   'TP': 'TAP Air Portugal',
   'LX': 'Swiss',
   'OS': 'Austrian',
+  'SN': 'Brussels Airlines',
   'SK': 'SAS',
   'AY': 'Finnair',
   'DY': 'Norwegian',
   'D8': 'Norwegian',
+  'FI': 'Icelandair',
   'A3': 'Aegean',
   'TK': 'Turkish Airlines',
   'LO': 'LOT Polish',
@@ -79,10 +81,12 @@ export const iataToICAO: Record<string, string> = {
   'TP': 'TAP', // TAP Air Portugal
   'LX': 'SWR', // Swiss
   'OS': 'AUA', // Austrian
+  'SN': 'BEL', // Brussels Airlines
   'SK': 'SAS', // SAS
   'AY': 'FIN', // Finnair
   'DY': 'NOZ', // Norwegian
   'D8': 'NOZ', // Norwegian (alternative code)
+  'FI': 'ICE', // Icelandair
   'A3': 'AEE', // Aegean
   'TK': 'THY', // Turkish Airlines
   'LO': 'LOT', // LOT Polish
@@ -149,6 +153,7 @@ export const airlineToICAO: Record<string, string> = {
   'SAS': 'SAS',
   'Finnair': 'FIN',
   'Norwegian': 'NAX',
+  'Icelandair': 'ICE',
   'Aegean': 'AEE',
   'Turkish Airlines': 'THY',
   'LOT': 'LOT',

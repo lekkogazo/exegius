@@ -1,5 +1,5 @@
 // Simple in-memory cache to prevent duplicate requests
-const requestCache = new Map<string, { data: any, timestamp: number }>();
+const requestCache = new Map<string, { data: any, timestamp: number, promise?: Promise<any> }>();
 const CACHE_DURATION = 30000; // 30 seconds cache
 
 interface FlightAPIConfig {
@@ -57,7 +57,6 @@ class FlightAPI {
     }
 
     try {
-      console.log('Making real FlightAPI request with key:', this.apiKey?.substring(0, 8) + '...');
       
       // Extract IATA codes if in format "City (CODE)"
       const extractCode = (airport: string): string => {
@@ -97,15 +96,25 @@ class FlightAPI {
       // Check cache first
       const cacheKey = endpoint;
       const cached = requestCache.get(cacheKey);
-      if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      
+      // If we have valid cached data, return it
+      if (cached && cached.data && (Date.now() - cached.timestamp) < CACHE_DURATION) {
         console.log('Using cached FlightAPI response');
         return this.transformFlightAPIResponse(cached.data);
       }
-
-      console.log('FlightAPI request URL:', endpoint);
       
+      // If there's an ongoing request for this endpoint, wait for it
+      if (cached?.promise) {
+        console.log('Waiting for existing FlightAPI request...');
+        const data = await cached.promise;
+        return this.transformFlightAPIResponse(data);
+      }
+
+      console.log('Making real FlightAPI request...');
+      
+      // Create and store the promise to prevent duplicate requests
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeout = setTimeout(() => controller.abort(), 60000); // 60 second timeout for large responses
       
       const response = await fetch(endpoint, {
         headers: {
