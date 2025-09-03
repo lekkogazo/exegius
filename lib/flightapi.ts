@@ -79,8 +79,8 @@ class FlightAPI {
       
       const children = params.children || 0;
       const infants = 0; // Not provided in our interface, default to 0
-      // API requires capitalized cabin class: "Economy", "Business", "First", "Premium_Economy"
-      const cabin = params.cabinClass || 'Economy';
+      // API requires lowercase cabin class in the URL
+      const cabin = (params.cabinClass || 'Economy').toLowerCase();
       const currency = params.currencyCode || 'EUR';
       
       let endpoint: string;
@@ -214,44 +214,21 @@ class FlightAPI {
         const outboundSegments = this.parseLeg(outboundLegId, legsMap, segmentsMap, placesMap, carriersMap);
         const returnSegments = returnLegId ? this.parseLeg(returnLegId, legsMap, segmentsMap, placesMap, carriersMap) : undefined;
         
-        // Get booking URL from pricing options or generate based on airline
+        // Get booking URL from pricing options - this is the deep link from the API
         let bookingUrl = itinerary.pricing_options?.[0]?.items?.[0]?.url || '';
         
-        // Get the primary airline (first segment's airline)
-        const primaryAirline = outboundSegments[0]?.airline || 'XX';
-        
-        // Generate direct airline booking URL if possible
-        const airlineUrls: Record<string, string> = {
-          'LH': 'https://www.lufthansa.com',
-          'FR': 'https://www.ryanair.com',
-          'U2': 'https://www.easyjet.com',
-          'W6': 'https://www.wizzair.com',
-          'DY': 'https://www.norwegian.com',
-          'BA': 'https://www.britishairways.com',
-          'AF': 'https://www.airfrance.com',
-          'KL': 'https://www.klm.com',
-          'IB': 'https://www.iberia.com',
-          'VY': 'https://www.vueling.com',
-          'LO': 'https://www.lot.com',
-          'SK': 'https://www.sas.se',
-          'AZ': 'https://www.ita-airways.com',
-          'TP': 'https://www.flytap.com',
-          'LX': 'https://www.swiss.com',
-          'OS': 'https://www.austrian.com',
-          'AY': 'https://www.finnair.com',
-          'EW': 'https://www.eurowings.com',
-        };
-        
-        // If we have a known airline, use their website, otherwise use Skyscanner
-        if (airlineUrls[primaryAirline]) {
-          bookingUrl = airlineUrls[primaryAirline];
-        } else if (!bookingUrl || bookingUrl === '#') {
-          // Fallback to Skyscanner search
+        // The API returns a relative URL that needs to be prepended with Skyscanner base URL
+        if (bookingUrl && !bookingUrl.startsWith('http')) {
+          // This is the Skyscanner deep link that will redirect to the actual booking
+          bookingUrl = `https://www.skyscanner.com${bookingUrl}`;
+        } else if (!bookingUrl) {
+          // Fallback if no URL provided - create a basic Skyscanner search
           const origin = outboundSegments[0]?.departure.airport.match(/\(([A-Z]{3})\)/)?.[1] || 'XXX';
           const dest = outboundSegments[outboundSegments.length - 1]?.arrival.airport.match(/\(([A-Z]{3})\)/)?.[1] || 'XXX';
-          bookingUrl = `https://www.skyscanner.com/transport/flights/${origin}/${dest}/`;
-        } else if (!bookingUrl.startsWith('http')) {
-          bookingUrl = `https://www.skyscanner.com${bookingUrl}`;
+          const depDate = outboundSegments[0]?.departure.time?.split('T')[0] || '';
+          const retDate = returnSegments?.[0]?.departure.time?.split('T')[0] || '';
+          
+          bookingUrl = `https://www.skyscanner.com/transport/flights/${origin}/${dest}/${depDate}/${retDate}/?adults=1&cabinclass=economy&preferdirects=false`;
         }
         
         flights.push({

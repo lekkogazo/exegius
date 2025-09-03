@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       returnDate: tripType === 'roundtrip' ? formattedReturnDate : undefined,
       adults,
       children: children > 0 ? children : undefined,
-      cabinClass: cabinClass.toLowerCase(),
+      cabinClass: cabinClass,
       currencyCode: 'EUR',
       directOnly,
     });
