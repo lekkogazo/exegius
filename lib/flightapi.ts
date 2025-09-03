@@ -45,6 +45,14 @@ class FlightAPI {
     // Use mock data if explicitly set or if no API key is provided
     this.useMockData = config.useMockData ?? !this.apiKey;
     
+    console.log('FlightAPI initialized:', {
+      hasApiKey: !!this.apiKey,
+      apiKeyLength: this.apiKey?.length,
+      useMockData: this.useMockData,
+      configUseMock: config.useMockData,
+      envUseMock: process.env.USE_MOCK_FLIGHTS
+    });
+    
     if (this.useMockData) {
       console.log('FlightAPI: Using mock data to preserve API calls');
     }
@@ -111,6 +119,8 @@ class FlightAPI {
       }
 
       console.log('Making real FlightAPI request...');
+      console.log('API Endpoint:', endpoint);
+      console.log('API Key present:', !!this.apiKey, 'Key length:', this.apiKey?.length);
       
       // Create and store the promise to prevent duplicate requests
       const controller = new AbortController();
