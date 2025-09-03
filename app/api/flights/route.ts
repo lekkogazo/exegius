@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
     // Initialize FlightAPI
     // If USE_MOCK_FLIGHTS is true or no API key, it will use mock data
     const flightAPI = new FlightAPI({
-      apiKey: process.env.FLIGHTAPI_KEY,
-      useMockData: process.env.USE_MOCK_FLIGHTS === 'true',
+      apiKey: process.env.FLIGHTAPI_KEY?.trim(),
+      useMockData: process.env.USE_MOCK_FLIGHTS?.trim() === 'true',
     });
 
     // Search for flights

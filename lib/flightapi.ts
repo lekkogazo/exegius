@@ -40,7 +40,7 @@ class FlightAPI {
   private useMockData: boolean;
 
   constructor(config: FlightAPIConfig = {}) {
-    this.apiKey = config.apiKey || process.env.FLIGHTAPI_KEY;
+    this.apiKey = (config.apiKey || process.env.FLIGHTAPI_KEY)?.trim();
     this.baseUrl = config.baseUrl || 'https://api.flightapi.io';
     // Use mock data if explicitly set or if no API key is provided
     this.useMockData = config.useMockData ?? !this.apiKey;
@@ -60,7 +60,7 @@ class FlightAPI {
 
   async searchFlights(params: FlightSearchParams): Promise<Flight[]> {
     // Always use mock data for development to save API calls
-    if (this.useMockData || !this.apiKey || process.env.USE_MOCK_FLIGHTS === 'true') {
+    if (this.useMockData || !this.apiKey || process.env.USE_MOCK_FLIGHTS?.trim() === 'true') {
       return this.generateMockFlights(params);
     }
 
