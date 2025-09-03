@@ -34,10 +34,20 @@ export async function GET(request: NextRequest) {
     const formattedReturnDate = returnDate ? formatDate(returnDate) : undefined;
 
     // Initialize FlightAPI
-    // If USE_MOCK_FLIGHTS is true or no API key, it will use mock data
+    // Get environment variables and clean them
+    const apiKey = process.env.FLIGHTAPI_KEY ? process.env.FLIGHTAPI_KEY.replace(/[\r\n\t\s]+$/, '') : undefined;
+    const useMock = process.env.USE_MOCK_FLIGHTS ? process.env.USE_MOCK_FLIGHTS.replace(/[\r\n\t\s]+$/, '') === 'true' : false;
+    
+    console.log('Environment check:', {
+      apiKeyPresent: !!apiKey,
+      apiKeyLength: apiKey?.length,
+      useMockValue: process.env.USE_MOCK_FLIGHTS,
+      useMockProcessed: useMock
+    });
+    
     const flightAPI = new FlightAPI({
-      apiKey: process.env.FLIGHTAPI_KEY?.trim(),
-      useMockData: process.env.USE_MOCK_FLIGHTS?.trim() === 'true',
+      apiKey: apiKey,
+      useMockData: useMock || !apiKey,
     });
 
     // Search for flights

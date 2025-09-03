@@ -40,27 +40,28 @@ class FlightAPI {
   private useMockData: boolean;
 
   constructor(config: FlightAPIConfig = {}) {
-    this.apiKey = (config.apiKey || process.env.FLIGHTAPI_KEY)?.trim();
+    // Clean the API key from any whitespace or newlines
+    this.apiKey = config.apiKey ? String(config.apiKey).replace(/[\r\n\t\s]+$/, '') : undefined;
     this.baseUrl = config.baseUrl || 'https://api.flightapi.io';
-    // Use mock data if explicitly set or if no API key is provided
-    this.useMockData = config.useMockData ?? !this.apiKey;
+    // Use mock data if explicitly set to true or if no API key is provided
+    this.useMockData = config.useMockData === true || !this.apiKey;
     
     console.log('FlightAPI initialized:', {
       hasApiKey: !!this.apiKey,
       apiKeyLength: this.apiKey?.length,
-      useMockData: this.useMockData,
-      configUseMock: config.useMockData,
-      envUseMock: process.env.USE_MOCK_FLIGHTS
+      apiKeyValue: this.apiKey ? `${this.apiKey.substring(0, 4)}...${this.apiKey.substring(this.apiKey.length - 4)}` : 'none',
+      useMockData: this.useMockData
     });
     
     if (this.useMockData) {
-      console.log('FlightAPI: Using mock data to preserve API calls');
+      console.log('FlightAPI: Using mock data');
     }
   }
 
   async searchFlights(params: FlightSearchParams): Promise<Flight[]> {
-    // Always use mock data for development to save API calls
-    if (this.useMockData || !this.apiKey || process.env.USE_MOCK_FLIGHTS?.trim() === 'true') {
+    // Use mock data if configured
+    if (this.useMockData || !this.apiKey) {
+      console.log('Using mock data for flight search');
       return this.generateMockFlights(params);
     }
 
