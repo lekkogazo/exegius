@@ -37,6 +37,7 @@ export default function Home() {
         
         <FlightSearchForm />
         
+        {/* Popular Routes - Hidden for now
         <div className="mt-24 pt-12 border-t border-gray-100">
           <h3 className="text-sm font-normal text-gray-500 mb-8 text-center uppercase tracking-wider">
             Popular Routes
@@ -64,6 +65,7 @@ export default function Home() {
             ))}
           </div>
         </div>
+        */}
 
         <div className="mt-16 text-center">
           <p className="text-xs text-gray-400">
