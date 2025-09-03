@@ -244,9 +244,14 @@ export default function FlightCard({
               <span className="text-sm font-medium text-gray-900">Total:</span>
               <span className="text-xl font-bold">{formatPrice(price.amount, price.currency)}</span>
             </div>
-            <button className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors uppercase">
+            <a 
+              href={bookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors uppercase inline-block"
+            >
               BOOK FLIGHT
-            </button>
+            </a>
           </div>
         </div>
       )}

@@ -1,3 +1,7 @@
+// Simple in-memory cache to prevent duplicate requests
+const requestCache = new Map<string, { data: any, timestamp: number }>();
+const CACHE_DURATION = 30000; // 30 seconds cache
+
 interface FlightAPIConfig {
   apiKey?: string;
   baseUrl?: string;
@@ -53,116 +57,529 @@ class FlightAPI {
     }
 
     try {
-      // FlightAPI.io endpoint structure
-      const endpoint = `${this.baseUrl}/compressedsearch/${this.apiKey}`;
+      console.log('Making real FlightAPI request with key:', this.apiKey?.substring(0, 8) + '...');
       
-      // Build query parameters for FlightAPI
-      const queryParams = new URLSearchParams({
-        origin: params.origin,
-        destination: params.destination,
-        departureDate: params.departureDate,
-        adults: params.adults.toString(),
-        currency: params.currencyCode || 'EUR',
-        ...(params.returnDate && { returnDate: params.returnDate }),
-        ...(params.children && { children: params.children.toString() }),
-        ...(params.cabinClass && { cabinClass: params.cabinClass.toLowerCase() }),
-        ...(params.directOnly && { stops: '0' }),
-      });
+      // Extract IATA codes if in format "City (CODE)"
+      const extractCode = (airport: string): string => {
+        const match = airport.match(/\(([A-Z]{3})\)/);
+        return match ? match[1] : airport.toUpperCase().slice(0, 3);
+      };
+      
+      const originCode = extractCode(params.origin);
+      const destinationCode = extractCode(params.destination);
+      
+      // Build the FlightAPI URL with path parameters
+      // Format: /endpoint/api_key/origin/destination/depart_date/return_date/adults/children/infants/cabin/currency
+      
+      // Format dates as YYYY-MM-DD (API requirement)
+      const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.toISOString().split('T')[0];
+      };
+      
+      const children = params.children || 0;
+      const infants = 0; // Not provided in our interface, default to 0
+      // API requires capitalized cabin class: "Economy", "Business", "First", "Premium_Economy"
+      const cabin = params.cabinClass || 'Economy';
+      const currency = params.currencyCode || 'EUR';
+      
+      let endpoint: string;
+      
+      if (params.returnDate) {
+        // Round Trip API endpoint with all parameters in path
+        endpoint = `${this.baseUrl}/roundtrip/${this.apiKey}/${originCode}/${destinationCode}/${formatDate(params.departureDate)}/${formatDate(params.returnDate)}/${params.adults}/${children}/${infants}/${cabin}/${currency}`;
+      } else {
+        // Oneway Trip API endpoint with all parameters in path
+        // For one-way, we don't have a return date
+        endpoint = `${this.baseUrl}/onewaytrip/${this.apiKey}/${originCode}/${destinationCode}/${formatDate(params.departureDate)}/${params.adults}/${children}/${infants}/${cabin}/${currency}`;
+      }
 
-      const response = await fetch(`${endpoint}?${queryParams}`);
+      // Check cache first
+      const cacheKey = endpoint;
+      const cached = requestCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        console.log('Using cached FlightAPI response');
+        return this.transformFlightAPIResponse(cached.data);
+      }
+
+      console.log('FlightAPI request URL:', endpoint);
+      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          'Accept': 'application/json',
+        },
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeout));
 
       if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = 'Unable to read error response';
+        }
+        console.error('FlightAPI error response:', errorText.substring(0, 500));
+        
+        // Handle specific error codes
+        if (response.status === 410) {
+          console.log('No flights found for this route/date (410 error)');
+          return []; // Return empty array for no flights
+        }
+        
+        if (response.status === 429) {
+          console.log('API rate limit exceeded (429 error) - you may have exceeded your free tier limit');
+          throw new Error('API rate limit exceeded - falling back to mock data');
+        }
+        
         throw new Error(`FlightAPI error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        const text = await response.text();
+        console.log('FlightAPI response size:', text.length, 'characters');
+        data = JSON.parse(text);
+        console.log('FlightAPI response parsed successfully');
+      } catch (e) {
+        console.error('Failed to parse FlightAPI response:', e);
+        throw new Error('Invalid response from FlightAPI');
+      }
+      
+      // Cache the response
+      requestCache.set(cacheKey, { data, timestamp: Date.now() });
+      
       return this.transformFlightAPIResponse(data);
     } catch (error) {
       console.error('FlightAPI search error:', error);
       // Fallback to mock data on error
+      console.log('Falling back to mock data due to API error');
       return this.generateMockFlights(params);
     }
   }
 
   private transformFlightAPIResponse(apiResponse: any): Flight[] {
     const flights: Flight[] = [];
-
-    if (apiResponse.legs && Array.isArray(apiResponse.legs)) {
-      // Group legs by search ID for round trips
-      const flightGroups = new Map<string, any[]>();
-      
-      apiResponse.legs.forEach((leg: any) => {
-        const searchId = leg.searchId || 'default';
-        if (!flightGroups.has(searchId)) {
-          flightGroups.set(searchId, []);
-        }
-        flightGroups.get(searchId)?.push(leg);
+    
+    
+    // Build lookup maps from the API response
+    const placesMap = new Map<number, any>();
+    const carriersMap = new Map<number, any>();
+    const legsMap = new Map<string, any>();
+    const segmentsMap = new Map<string, any>();
+    
+    // Build places lookup
+    if (apiResponse.places) {
+      apiResponse.places.forEach((place: any) => {
+        placesMap.set(place.id, place);
       });
+    }
+    
+    // Build carriers lookup
+    if (apiResponse.carriers) {
+      apiResponse.carriers.forEach((carrier: any) => {
+        carriersMap.set(carrier.id, carrier);
+      });
+    }
+    
+    // Build legs lookup
+    if (apiResponse.legs) {
+      apiResponse.legs.forEach((leg: any) => {
+        legsMap.set(leg.id, leg);
+      });
+    }
+    
+    // Build segments lookup
+    if (apiResponse.segments) {
+      apiResponse.segments.forEach((segment: any) => {
+        segmentsMap.set(segment.id, segment);
+      });
+    }
 
-      let flightIndex = 0;
-      flightGroups.forEach((legs) => {
-        const outboundLeg = legs[0];
-        const returnLeg = legs[1];
-
-        // Transform outbound segments
-        const outboundSegments = outboundLeg.segments?.map((seg: any) => ({
-          departure: {
-            airport: `${seg.departureAirport.city || seg.departureAirport.name} (${seg.departureAirport.code})`,
-            time: seg.departureTime,
-            terminal: seg.departureTerminal,
-          },
-          arrival: {
-            airport: `${seg.arrivalAirport.city || seg.arrivalAirport.name} (${seg.arrivalAirport.code})`,
-            time: seg.arrivalTime,
-            terminal: seg.arrivalTerminal,
-          },
-          airline: seg.airline.code,
-          flightNumber: `${seg.airline.code}${seg.flightNumber}`,
-          duration: seg.duration,
-        })) || [];
-
-        // Transform return segments if exists
-        const returnSegments = returnLeg?.segments?.map((seg: any) => ({
-          departure: {
-            airport: `${seg.departureAirport.city || seg.departureAirport.name} (${seg.departureAirport.code})`,
-            time: seg.departureTime,
-            terminal: seg.departureTerminal,
-          },
-          arrival: {
-            airport: `${seg.arrivalAirport.city || seg.arrivalAirport.name} (${seg.arrivalAirport.code})`,
-            time: seg.arrivalTime,
-            terminal: seg.arrivalTerminal,
-          },
-          airline: seg.airline.code,
-          flightNumber: `${seg.airline.code}${seg.flightNumber}`,
-          duration: seg.duration,
-        }));
-
-        // Calculate stay duration if round trip
-        let stayDuration;
-        if (returnSegments && returnSegments.length > 0 && outboundSegments.length > 0) {
-          const outboundArrival = new Date(outboundSegments[outboundSegments.length - 1].arrival.time);
-          const returnDeparture = new Date(returnSegments[0].departure.time);
-          stayDuration = Math.ceil((returnDeparture.getTime() - outboundArrival.getTime()) / (1000 * 60 * 60 * 24));
+    // Process itineraries
+    if (apiResponse.itineraries && Array.isArray(apiResponse.itineraries)) {
+      apiResponse.itineraries.forEach((itinerary: any, index: number) => {
+        // Each itinerary has pricing_options with the actual price
+        const price = itinerary.pricing_options?.[0]?.price?.amount || 0;
+        const currency = apiResponse.query?.currency || 'EUR';
+        
+        // Get leg IDs from itinerary
+        const legIds = itinerary.leg_ids || [];
+        const outboundLegId = legIds[0];
+        const returnLegId = legIds[1];
+        
+        // Parse legs using the lookup maps
+        const outboundSegments = this.parseLeg(outboundLegId, legsMap, segmentsMap, placesMap, carriersMap);
+        const returnSegments = returnLegId ? this.parseLeg(returnLegId, legsMap, segmentsMap, placesMap, carriersMap) : undefined;
+        
+        // Get booking URL from pricing options or generate based on airline
+        let bookingUrl = itinerary.pricing_options?.[0]?.items?.[0]?.url || '';
+        
+        // Get the primary airline (first segment's airline)
+        const primaryAirline = outboundSegments[0]?.airline || 'XX';
+        
+        // Generate direct airline booking URL if possible
+        const airlineUrls: Record<string, string> = {
+          'LH': 'https://www.lufthansa.com',
+          'FR': 'https://www.ryanair.com',
+          'U2': 'https://www.easyjet.com',
+          'W6': 'https://www.wizzair.com',
+          'DY': 'https://www.norwegian.com',
+          'BA': 'https://www.britishairways.com',
+          'AF': 'https://www.airfrance.com',
+          'KL': 'https://www.klm.com',
+          'IB': 'https://www.iberia.com',
+          'VY': 'https://www.vueling.com',
+          'LO': 'https://www.lot.com',
+          'SK': 'https://www.sas.se',
+          'AZ': 'https://www.ita-airways.com',
+          'TP': 'https://www.flytap.com',
+          'LX': 'https://www.swiss.com',
+          'OS': 'https://www.austrian.com',
+          'AY': 'https://www.finnair.com',
+          'EW': 'https://www.eurowings.com',
+        };
+        
+        // If we have a known airline, use their website, otherwise use Skyscanner
+        if (airlineUrls[primaryAirline]) {
+          bookingUrl = airlineUrls[primaryAirline];
+        } else if (!bookingUrl || bookingUrl === '#') {
+          // Fallback to Skyscanner search
+          const origin = outboundSegments[0]?.departure.airport.match(/\(([A-Z]{3})\)/)?.[1] || 'XXX';
+          const dest = outboundSegments[outboundSegments.length - 1]?.arrival.airport.match(/\(([A-Z]{3})\)/)?.[1] || 'XXX';
+          bookingUrl = `https://www.skyscanner.com/transport/flights/${origin}/${dest}/`;
+        } else if (!bookingUrl.startsWith('http')) {
+          bookingUrl = `https://www.skyscanner.com${bookingUrl}`;
         }
-
+        
         flights.push({
-          id: outboundLeg.id || `flight-${flightIndex++}`,
+          id: itinerary.id || `flight-${index}`,
           outboundSegments,
           returnSegments,
           price: {
-            amount: parseFloat(outboundLeg.price || 0) + (returnLeg?.price ? parseFloat(returnLeg.price) : 0),
-            currency: outboundLeg.currency || 'EUR',
+            amount: price,
+            currency: currency,
           },
-          totalDuration: outboundLeg.duration || 120,
+          totalDuration: this.calculateTotalDuration(outboundSegments),
           stops: outboundSegments.length - 1,
-          bookingUrl: outboundLeg.deepLink || '#',
-          stayDuration,
+          bookingUrl,
+          stayDuration: this.calculateStayDuration(outboundSegments, returnSegments),
         });
       });
     }
 
     return flights;
+  }
+  
+  private parseLeg(legId: string, legsMap: Map<string, any>, segmentsMap: Map<string, any>, 
+                   placesMap: Map<number, any>, carriersMap: Map<number, any>): any[] {
+    const segments: any[] = [];
+    
+    if (!legId) return this.generateMockSegments();
+    
+    const leg = legsMap.get(legId);
+    if (!leg) {
+      console.log('Leg not found:', legId);
+      return this.generateMockSegments();
+    }
+    
+    // Process each segment in the leg
+    const segmentIds = leg.segment_ids || [];
+    segmentIds.forEach((segmentId: string) => {
+      const segment = segmentsMap.get(segmentId);
+      if (!segment) return;
+      
+      // Get place information
+      const originPlace = placesMap.get(segment.origin_place_id) || {};
+      const destPlace = placesMap.get(segment.destination_place_id) || {};
+      
+      // Get carrier information
+      const carrier = carriersMap.get(segment.marketing_carrier_id) || 
+                     carriersMap.get(segment.operating_carrier_id) || {};
+      
+      // Get IATA codes from place objects - use display_code
+      const originCode = originPlace.display_code || originPlace.alt_id || 'XXX';
+      const destCode = destPlace.display_code || destPlace.alt_id || 'XXX';
+      const originCity = originPlace.name || 'Unknown';
+      const destCity = destPlace.name || 'Unknown';
+      
+      // Get airline code - use display_code
+      const airlineCode = carrier.display_code || carrier.alt_id || 'XX';
+      const flightNumber = `${airlineCode}${segment.marketing_flight_number || Math.floor(1000 + Math.random() * 8999)}`;
+      
+      segments.push({
+        departure: {
+          airport: `${originCity} (${originCode})`,
+          time: segment.departure,
+        },
+        arrival: {
+          airport: `${destCity} (${destCode})`,
+          time: segment.arrival,
+        },
+        airline: airlineCode,
+        flightNumber: flightNumber,
+        duration: segment.duration || 120,
+      });
+    });
+    
+    return segments.length > 0 ? segments : this.generateMockSegments();
+  }
+  
+  private getAirlineFromCarrierId(carrierId: string, apiResponse: any): string {
+    // Common carrier ID mappings for European airlines
+    const carrierMap: Record<string, string> = {
+      '31913': 'FR', // Ryanair
+      '32090': 'W6', // Wizz Air
+      '30685': 'U2', // easyJet
+      '31669': 'DY', // Norwegian
+      '32480': 'VY', // Vueling
+      '32132': 'LH', // Lufthansa
+      '30189': 'AF', // Air France
+      '31609': 'KL', // KLM
+      '31539': 'BA', // British Airways
+      '32348': 'LO', // LOT Polish Airlines
+      '32236': 'AZ', // ITA Airways
+      '31665': 'SK', // SAS
+      '32753': 'IB', // Iberia
+      '32723': 'TP', // TAP Portugal
+      '31717': 'LX', // Swiss
+      '31538': 'OS', // Austrian Airlines
+      '30870': 'AY', // Finnair
+      '30626': 'A3', // Aegean Airlines
+      '32728': 'EW', // Eurowings
+      '32756': 'HV', // Transavia
+      '32093': 'W6', // Wizz Air alternative
+      '32544': 'LH', // Lufthansa alternative
+      '32332': 'KL', // KLM alternative
+      '32672': 'IB', // Iberia alternative
+      '32704': 'TP', // TAP alternative
+      '32659': 'LX', // Swiss alternative
+      '32356': 'AZ', // ITA Airways alternative
+      '32657': 'SN', // Brussels Airlines
+      '32338': 'OS', // Austrian Airlines alternative
+    };
+    
+    const mappedCarrier = carrierMap[carrierId];
+    if (!mappedCarrier && carrierId) {
+      console.log(`Unknown carrier ID: ${carrierId} - defaulting to XX`);
+    }
+    return mappedCarrier || 'XX';
+  }
+  
+  private extractFlightNumber(legPart: string, airline: string): string {
+    // Try to extract flight number from the leg ID
+    // Sometimes it's embedded in the format
+    const match = legPart.match(/\b(\d{2,4})\b/g);
+    if (match && match.length > 2) {
+      // Use one of the middle numbers as flight number
+      return `${airline}${match[Math.floor(match.length / 2)]}`;
+    }
+    return `${airline}${Math.floor(100 + Math.random() * 9899)}`;
+  }
+  
+  private calculateSegmentDuration(depTime: string, arrTime: string): number {
+    const dep = new Date(depTime);
+    const arr = new Date(arrTime);
+    return Math.floor((arr.getTime() - dep.getTime()) / (1000 * 60));
+  }
+  
+  private getCityName(airportCode: string, apiResponse: any): string | null {
+    // City name mappings for common airports
+    const cityMap: Record<string, string> = {
+      'WAW': 'Warsaw',
+      'BER': 'Berlin',
+      'CDG': 'Paris',
+      'FRA': 'Frankfurt',
+      'MUC': 'Munich',
+      'AMS': 'Amsterdam',
+      'MAD': 'Madrid',
+      'BCN': 'Barcelona',
+      'LIS': 'Lisbon',
+      'FCO': 'Rome',
+      'LHR': 'London',
+      'MAN': 'Manchester',
+      'DUB': 'Dublin',
+      'CPH': 'Copenhagen',
+      'ARN': 'Stockholm',
+      'OSL': 'Oslo',
+      'HEL': 'Helsinki',
+      'VIE': 'Vienna',
+      'ZRH': 'Zurich',
+      'BRU': 'Brussels',
+      'ATH': 'Athens',
+      'KRK': 'Krakow',
+      'WRO': 'Wroclaw',
+      'GDN': 'Gdansk',
+    };
+    
+    return cityMap[airportCode] || null;
+  }
+  
+  private getAirportCode(code: string): string {
+    // Map numeric codes to IATA codes if needed
+    const airportMap: Record<string, string> = {
+      '17648': 'WAW', // Warsaw
+      '9828': 'BER', // Berlin
+      '10413': 'CDG', // Paris
+      '17517': 'FRA', // Frankfurt
+      '13451': 'LHR', // London Heathrow
+      '11616': 'AMS', // Amsterdam
+      '16189': 'MUC', // Munich
+      '13554': 'MAD', // Madrid
+      '9451': 'BCN', // Barcelona
+      '13667': 'MAN', // Manchester
+      '11240': 'DUB', // Dublin
+      '10756': 'CPH', // Copenhagen
+      '10043': 'BRU', // Brussels
+      '17305': 'VIE', // Vienna
+      '11051': 'FCO', // Rome Fiumicino
+      // Add more mappings as needed
+    };
+    return airportMap[code] || code;
+  }
+  
+  
+  private parseFlightTime(timeStr: string): string {
+    // Parse format like "2509101835" to ISO date
+    if (timeStr.length >= 10) {
+      const year = '20' + timeStr.substring(0, 2);
+      const month = timeStr.substring(2, 4);
+      const day = timeStr.substring(4, 6);
+      const hour = timeStr.substring(6, 8);
+      const minute = timeStr.substring(8, 10);
+      return `${year}-${month}-${day}T${hour}:${minute}:00Z`;
+    }
+    return new Date().toISOString();
+  }
+  
+  private calculateTotalDuration(segments: any[]): number {
+    if (segments.length === 0) return 120;
+    const firstDep = new Date(segments[0].departure.time);
+    const lastArr = new Date(segments[segments.length - 1].arrival.time);
+    return Math.floor((lastArr.getTime() - firstDep.getTime()) / (1000 * 60));
+  }
+  
+  private calculateStayDuration(outbound: any[], returnSegs: any[] | undefined): number | undefined {
+    if (!returnSegs || returnSegs.length === 0 || outbound.length === 0) return undefined;
+    const outArr = new Date(outbound[outbound.length - 1].arrival.time);
+    const retDep = new Date(returnSegs[0].departure.time);
+    return Math.ceil((retDep.getTime() - outArr.getTime()) / (1000 * 60 * 60 * 24));
+  }
+  
+  private transformSingleFlight(flight: any, index: number): Flight {
+    // Parse segments/legs
+    const segments = flight.segments || flight.legs || flight.itineraries || [];
+    const outboundSegments: any[] = [];
+    const returnSegments: any[] = [];
+    
+    // Determine if this is a round trip based on segments
+    const hasReturn = segments.some((seg: any) => seg.direction === 'return' || seg.isReturn);
+    
+    segments.forEach((seg: any) => {
+      const segment = {
+        departure: {
+          airport: `${seg.departure?.city || seg.from?.city || seg.origin?.city || seg.departure?.airport || seg.from || seg.origin} (${seg.departure?.iata || seg.from?.iata || seg.departure?.code || seg.from?.code || seg.origin})`,
+          time: seg.departure?.time || seg.departureTime || seg.departure_time,
+          terminal: seg.departure?.terminal,
+        },
+        arrival: {
+          airport: `${seg.arrival?.city || seg.to?.city || seg.destination?.city || seg.arrival?.airport || seg.to || seg.destination} (${seg.arrival?.iata || seg.to?.iata || seg.arrival?.code || seg.to?.code || seg.destination})`,
+          time: seg.arrival?.time || seg.arrivalTime || seg.arrival_time,
+          terminal: seg.arrival?.terminal,
+        },
+        airline: seg.airline?.code || seg.carrier || seg.airline || 'XX',
+        flightNumber: seg.flightNumber || seg.flight_number || `${seg.airline || 'XX'}${Math.floor(1000 + Math.random() * 8999)}`,
+        duration: seg.duration || 120,
+      };
+      
+      if (seg.direction === 'return' || seg.isReturn) {
+        returnSegments.push(segment);
+      } else {
+        outboundSegments.push(segment);
+      }
+    });
+    
+    // If no clear separation, assume first half is outbound, second half is return
+    if (outboundSegments.length === 0 && segments.length > 0) {
+      const midPoint = Math.ceil(segments.length / 2);
+      segments.slice(0, midPoint).forEach((seg: any) => {
+        outboundSegments.push({
+          departure: {
+            airport: `${seg.departure?.city || seg.from?.city || 'Unknown'} (${seg.departure?.iata || seg.from?.code || 'XXX'})`,
+            time: seg.departure?.time || seg.departureTime || new Date().toISOString(),
+          },
+          arrival: {
+            airport: `${seg.arrival?.city || seg.to?.city || 'Unknown'} (${seg.arrival?.iata || seg.to?.code || 'XXX'})`,
+            time: seg.arrival?.time || seg.arrivalTime || new Date().toISOString(),
+          },
+          airline: seg.airline?.code || seg.carrier || 'XX',
+          flightNumber: seg.flightNumber || `XX${Math.floor(1000 + Math.random() * 8999)}`,
+          duration: seg.duration || 120,
+        });
+      });
+      
+      if (segments.length > midPoint) {
+        segments.slice(midPoint).forEach((seg: any) => {
+          returnSegments.push({
+            departure: {
+              airport: `${seg.departure?.city || seg.from?.city || 'Unknown'} (${seg.departure?.iata || seg.from?.code || 'XXX'})`,
+              time: seg.departure?.time || seg.departureTime || new Date().toISOString(),
+            },
+            arrival: {
+              airport: `${seg.arrival?.city || seg.to?.city || 'Unknown'} (${seg.arrival?.iata || seg.to?.code || 'XXX'})`,
+              time: seg.arrival?.time || seg.arrivalTime || new Date().toISOString(),
+            },
+            airline: seg.airline?.code || seg.carrier || 'XX',
+            flightNumber: seg.flightNumber || `XX${Math.floor(1000 + Math.random() * 8999)}`,
+            duration: seg.duration || 120,
+          });
+        });
+      }
+    }
+    
+    // Calculate stay duration if round trip
+    let stayDuration;
+    if (returnSegments.length > 0 && outboundSegments.length > 0) {
+      try {
+        const outboundArrival = new Date(outboundSegments[outboundSegments.length - 1].arrival.time);
+        const returnDeparture = new Date(returnSegments[0].departure.time);
+        stayDuration = Math.ceil((returnDeparture.getTime() - outboundArrival.getTime()) / (1000 * 60 * 60 * 24));
+      } catch (e) {
+        stayDuration = undefined;
+      }
+    }
+    
+    return {
+      id: flight.id || flight.trip_id || `flight-${index}`,
+      outboundSegments: outboundSegments.length > 0 ? outboundSegments : this.generateMockSegments(),
+      returnSegments: returnSegments.length > 0 ? returnSegments : undefined,
+      price: {
+        amount: parseFloat(flight.price?.total || flight.total_price || flight.price || Math.random() * 500),
+        currency: flight.price?.currency || flight.currency || 'EUR',
+      },
+      totalDuration: flight.duration || flight.total_duration || 180,
+      stops: flight.stops || (outboundSegments.length - 1) || 0,
+      bookingUrl: flight.deep_link || flight.deepLink || flight.booking_url || flight.url || '#',
+      stayDuration,
+    };
+  }
+  
+  private generateMockSegments(): any[] {
+    return [{
+      departure: {
+        airport: 'Unknown (XXX)',
+        time: new Date().toISOString(),
+      },
+      arrival: {
+        airport: 'Unknown (XXX)',
+        time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      },
+      airline: 'XX',
+      flightNumber: 'XX0000',
+      duration: 120,
+    }];
   }
 
   private generateMockFlights(params: FlightSearchParams): Flight[] {
@@ -349,7 +766,12 @@ class FlightAPI {
         },
         totalDuration: duration,
         stops,
-        bookingUrl: '#',
+        bookingUrl: airline === 'LH' ? 'https://www.lufthansa.com' :
+                   airline === 'FR' ? 'https://www.ryanair.com' :
+                   airline === 'W6' ? 'https://www.wizzair.com' :
+                   airline === 'U2' ? 'https://www.easyjet.com' :
+                   airline === 'LO' ? 'https://www.lot.com' :
+                   `https://www.skyscanner.com/transport/flights/${originCode}/${destCode}/`,
         stayDuration,
       });
     }
